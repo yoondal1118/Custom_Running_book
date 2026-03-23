@@ -77,7 +77,7 @@ class Client:
         return {
             "Authorization": f"Bearer {self.api_key}",
             "User-Agent": f"BookPrintAPI-Python/{_VERSION}",
-            "X-Transaction-ID": str(uuid.uuid4()),
+            "Idempotency-Key": str(uuid.uuid4()),
         }
 
     def _url(self, path: str) -> str:
