@@ -1,0 +1,35 @@
+.navbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  background: var(--dark);
+  padding: 14px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 100;
+}
+.navbar-logo {
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 20px;
+  color: var(--orange);
+}
+.navbar-logo span { color: #fff; }
+.navbar-links {
+  display: flex;
+  gap: 28px;
+}
+.navbar-links button {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.7);
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.navbar-links button:hover { color: var(--orange-light); }
+
+@media (max-width: 600px) {
+  .navbar { padding: 14px 20px; }
+  .navbar-links { gap: 16px; }
+}

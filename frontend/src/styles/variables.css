@@ -1,0 +1,57 @@
+@import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@300;400;500;700&family=Oswald:wght@400;600&display=swap');
+
+:root {
+  --orange: #E8632A;
+  --orange-light: #F5A06B;
+  --orange-dark: #B54A1A;
+  --cream: #FAF6EE;
+  --dark: #1A1612;
+  --gray: #6B6560;
+  --gray-light: #EDE8E0;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Noto Sans KR', sans-serif;
+  background: var(--cream);
+  color: var(--dark);
+  overflow-x: hidden;
+}
+
+.btn-primary {
+  display: inline-block;
+  background: var(--orange);
+  color: #fff;
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 18px;
+  padding: 16px 40px;
+  border: none;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  transition: background 0.2s, transform 0.15s;
+  text-decoration: none;
+}
+.btn-primary:hover {
+  background: var(--orange-dark);
+  transform: translateY(-2px);
+}
+
+.section-label {
+  font-family: 'Oswald', sans-serif;
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: var(--orange);
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-label::before {
+  content: '';
+  display: inline-block;
+  width: 20px;
+  height: 1px;
+  background: var(--orange);
+}
