@@ -92,6 +92,7 @@ class Client:
         return resp.json()
 
     def _request(self, method: str, path: str, **kwargs) -> dict | None:
+        print(f"실제 API 호출: {method} {self._url(path)}")
         try:
             resp = self._session.request(method, self._url(path), timeout=self.timeout, **kwargs)
             return self._handle_response(resp)

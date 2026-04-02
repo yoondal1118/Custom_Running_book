@@ -6,6 +6,7 @@ from database import get_db
 from auth import get_current_user
 import models
 from services.running_book import create_running_book
+import traceback
 
 router = APIRouter()
 
@@ -82,6 +83,7 @@ async def create_book(
             }
         }
     except Exception as e:
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/estimate")

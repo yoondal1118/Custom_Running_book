@@ -77,7 +77,7 @@ async def create_running_book(order_data: dict) -> dict:
         creation_type="TEST"
     )
     book_uid = book_resp["data"]["bookUid"]
-
+    print(f"표지 추가 시도 — URL: /books/{book_uid}/cover")
     # 2. 표지 추가
     client.covers.create(
         book_uid,
