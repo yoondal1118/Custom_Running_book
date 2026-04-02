@@ -8,7 +8,7 @@ from database import get_db
 import models
 import os
 
-SECRET_KEY = os.getenv("SECRET_KEY", "running-book-secret-key-change-in-production")
+SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
 
