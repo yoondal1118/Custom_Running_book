@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import './MyPage.css'
@@ -11,9 +11,25 @@ export default function MyPage() {
   const [ordersLoading, setOrdersLoading] = useState(true)
   const [cancelModal, setCancelModal] = useState(null)
   const [cancelReason, setCancelReason] = useState('')
-  const [infoForm, setInfoForm] = useState({ email: '', password: '', password_confirm: '', address: '', address_detail: '', postal_code: '', phone: '' })
+  const [infoForm, setInfoForm] = useState({
+    email: '', password: '', password_confirm: '',
+    address: '', address_detail: '', postal_code: '', phone: ''
+  })
   const [infoMsg, setInfoMsg] = useState('')
   const [infoError, setInfoError] = useState('')
+
+  const fetchOrders = useCallback(async () => {
+    setOrdersLoading(true)
+    try {
+      const res = await authFetch('/api/orders/my')
+      const data = await res.json()
+      if (data.success) setOrders(data.data)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setOrdersLoading(false)
+    }
+  }, [authFetch])
 
   useEffect(() => {
     if (!user) { navigate('/login'); return }
@@ -27,16 +43,6 @@ export default function MyPage() {
     })
     fetchOrders()
   }, [user])
-
-  const fetchOrders = async () => {
-    setOrdersLoading(true)
-    try {
-      const res = await authFetch('/api/orders/my')
-      const data = await res.json()
-      if (data.success) setOrders(data.data)
-    } catch (e) {}
-    finally { setOrdersLoading(false) }
-  }
 
   const handleCancelSubmit = async () => {
     if (!cancelReason.trim()) { alert('취소 사유를 입력해주세요'); return }
@@ -56,37 +62,55 @@ export default function MyPage() {
   }
 
   const handleInfoSave = async () => {
-    setInfoMsg(''); setInfoError('')
+    setInfoMsg('')
+    setInfoError('')
     if (infoForm.password && infoForm.password !== infoForm.password_confirm) {
-      setInfoError('비밀번호가 일치하지 않습니다'); return
+      setInfoError('비밀번호가 일치하지 않습니다')
+      return
     }
     try {
-      const body = {}
-      if (infoForm.email) body.email = infoForm.email
-      if (infoForm.password) { body.password = infoForm.password; body.password_confirm = infoForm.password_confirm }
-      if (infoForm.address !== undefined) body.address = infoForm.address
-      if (infoForm.address_detail !== undefined) body.address_detail = infoForm.address_detail
-      if (infoForm.postal_code !== undefined) body.postal_code = infoForm.postal_code
-      if (infoForm.phone !== undefined) body.phone = infoForm.phone
+      const body = {
+        email: infoForm.email,
+        address: infoForm.address,
+        address_detail: infoForm.address_detail,
+        postal_code: infoForm.postal_code,
+        phone: infoForm.phone,
+      }
+      if (infoForm.password) {
+        body.password = infoForm.password
+        body.password_confirm = infoForm.password_confirm
+      }
 
-      const res = await authFetch('/api/auth/me', { method: 'PATCH', body: JSON.stringify(body) })
+      const res = await authFetch('/api/auth/me', {
+        method: 'PATCH',
+        body: JSON.stringify(body)
+      })
+
+      // 401이어도 로그인으로 보내지 않고 에러 표시 — 원인 파악 우선
       const data = await res.json()
-      if (!data.success) throw new Error(data.detail)
+      console.log('PATCH /api/auth/me 응답:', res.status, data)
+
+      if (!data.success) {
+        setInfoError(`저장 실패 (${res.status}): ${data.detail || JSON.stringify(data)}`)
+        return
+      }
       setUser(data.data)
       setInfoMsg('정보가 저장되었습니다')
       setInfoForm(p => ({ ...p, password: '', password_confirm: '' }))
     } catch (e) {
-      setInfoError(e.message || '저장 중 오류가 발생했습니다')
+      setInfoError('저장 중 오류: ' + e.message)
     }
   }
 
   const statusLabel = (s) => s === 'cancelled' ? '취소됨' : '결제완료'
 
+  if (!user) return null
+
   return (
     <div className="mypage">
       <div className="mypage-sidebar">
         <Link to="/" className="mypage-logo">러닝일지<span>북</span></Link>
-        <div className="mypage-username">{user?.name}님</div>
+        <div className="mypage-username">{user.name}님</div>
         <nav className="mypage-nav">
           <button className={tab === 'orders' ? 'active' : ''} onClick={() => setTab('orders')}>주문 내역</button>
           <button className={tab === 'info' ? 'active' : ''} onClick={() => setTab('info')}>내 정보 변경</button>
@@ -95,7 +119,6 @@ export default function MyPage() {
       </div>
 
       <div className="mypage-content">
-        {/* 주문 내역 */}
         {tab === 'orders' && (
           <div>
             <h2>주문 내역</h2>
@@ -132,13 +155,11 @@ export default function MyPage() {
           </div>
         )}
 
-        {/* 내 정보 변경 */}
         {tab === 'info' && (
           <div>
             <h2>내 정보 변경</h2>
             {infoMsg && <div className="info-success">{infoMsg}</div>}
             {infoError && <div className="info-error">{infoError}</div>}
-
             <div className="info-section">계정 정보</div>
             <div className="info-field"><label>이메일</label>
               <input value={infoForm.email} onChange={e => setInfoForm(p => ({ ...p, email: e.target.value }))} />
@@ -154,7 +175,6 @@ export default function MyPage() {
             <div className="info-field"><label>연락처</label>
               <input value={infoForm.phone} onChange={e => setInfoForm(p => ({ ...p, phone: e.target.value }))} />
             </div>
-
             <div className="info-section">배송지</div>
             <div className="info-field"><label>우편번호</label>
               <input value={infoForm.postal_code} onChange={e => setInfoForm(p => ({ ...p, postal_code: e.target.value }))} />
@@ -165,24 +185,17 @@ export default function MyPage() {
             <div className="info-field"><label>상세주소</label>
               <input value={infoForm.address_detail} onChange={e => setInfoForm(p => ({ ...p, address_detail: e.target.value }))} />
             </div>
-
             <button className="info-save-btn" onClick={handleInfoSave}>저장하기</button>
           </div>
         )}
       </div>
 
-      {/* 취소 모달 */}
       {cancelModal && (
         <div className="cancel-overlay" onClick={e => e.target === e.currentTarget && setCancelModal(null)}>
           <div className="cancel-modal">
             <h3>주문 취소</h3>
             <p>취소 사유를 입력해주세요</p>
-            <textarea
-              value={cancelReason}
-              onChange={e => setCancelReason(e.target.value)}
-              placeholder="취소 사유 입력..."
-              rows={4}
-            />
+            <textarea value={cancelReason} onChange={e => setCancelReason(e.target.value)} placeholder="취소 사유 입력..." rows={4} />
             <div className="cancel-modal-btns">
               <button className="cancel-modal-back" onClick={() => setCancelModal(null)}>돌아가기</button>
               <button className="cancel-modal-confirm" onClick={handleCancelSubmit}>취소 확인</button>
