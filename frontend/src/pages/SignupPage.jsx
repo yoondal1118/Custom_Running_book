@@ -3,6 +3,20 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import './AuthPage.css'
 
+function Field({ label, name, type = 'text', placeholder, required, value, onChange }) {
+  return (
+    <div className="auth-field">
+      <label>{label}{required && <span className="required"> *</span>}</label>
+      <input
+        type={type}
+        placeholder={placeholder}
+        value={value}
+        onChange={e => onChange(name, e.target.value)}
+      />
+    </div>
+  )
+}
+
 export default function SignupPage() {
   const { login } = useAuth()
   const navigate = useNavigate()
@@ -14,7 +28,7 @@ export default function SignupPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const update = (k, v) => setForm(p => ({ ...p, [k]: v }))
+  const update = (key, val) => setForm(prev => ({ ...prev, [key]: val }))
 
   const handleSubmit = async () => {
     if (!form.username || !form.name || !form.email || !form.password) {
@@ -44,16 +58,6 @@ export default function SignupPage() {
     }
   }
 
-  const Field = ({ label, name, type = 'text', placeholder, required }) => (
-    <div className="auth-field">
-      <label>{label}{required && <span className="required"> *</span>}</label>
-      <input
-        type={type} placeholder={placeholder}
-        value={form[name]} onChange={e => update(name, e.target.value)}
-      />
-    </div>
-  )
-
   return (
     <div className="auth-page">
       <div className="auth-box wide">
@@ -64,20 +68,25 @@ export default function SignupPage() {
 
         <div className="auth-section-title">기본 정보</div>
         <div className="auth-row">
-          <Field label="아이디" name="username" placeholder="영문/숫자" required />
-          <Field label="이름" name="name" placeholder="실명 입력" required />
+          <Field label="아이디" name="username" placeholder="영문/숫자" required value={form.username} onChange={update} />
+          <Field label="이름" name="name" placeholder="실명 입력" required value={form.name} onChange={update} />
         </div>
-        <Field label="이메일" name="email" type="email" placeholder="example@email.com" required />
+        <Field label="이메일" name="email" type="email" placeholder="example@email.com" required value={form.email} onChange={update} />
         <div className="auth-row">
-          <Field label="비밀번호" name="password" type="password" placeholder="8자 이상" required />
-          <Field label="비밀번호 확인" name="password_confirm" type="password" placeholder="비밀번호 재입력" required />
+          <Field label="비밀번호" name="password" type="password" placeholder="8자 이상" required value={form.password} onChange={update} />
+          <Field label="비밀번호 확인" name="password_confirm" type="password" placeholder="비밀번호 재입력" required value={form.password_confirm} onChange={update} />
         </div>
-        <Field label="연락처" name="phone" placeholder="010-0000-0000" />
+        <Field label="연락처" name="phone" placeholder="010-0000-0000" value={form.phone} onChange={update} />
 
-        <div className="auth-section-title">배송지 등록 <span style={{fontWeight:300, fontSize:12, color:'#888'}}>(선택 — 나중에 마이페이지에서 등록 가능)</span></div>
-        <Field label="우편번호" name="postal_code" placeholder="00000" />
-        <Field label="주소" name="address" placeholder="도로명 주소" />
-        <Field label="상세주소" name="address_detail" placeholder="동/호수" />
+        <div className="auth-section-title">
+          배송지 등록
+          <span style={{ fontWeight: 300, fontSize: 12, color: '#888', marginLeft: 8, textTransform: 'none', letterSpacing: 0 }}>
+            (선택 — 마이페이지에서도 등록 가능)
+          </span>
+        </div>
+        <Field label="우편번호" name="postal_code" placeholder="00000" value={form.postal_code} onChange={update} />
+        <Field label="주소" name="address" placeholder="도로명 주소" value={form.address} onChange={update} />
+        <Field label="상세주소" name="address_detail" placeholder="동/호수" value={form.address_detail} onChange={update} />
 
         <button className="auth-btn" onClick={handleSubmit} disabled={loading}>
           {loading ? '가입 중...' : '회원가입 완료'}
