@@ -1,0 +1,169 @@
+.mypage {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  min-height: 100vh;
+  background: var(--dark);
+}
+.mypage-sidebar {
+  background: #110E0B;
+  padding: 40px 24px;
+  display: flex; flex-direction: column;
+  border-right: 1px solid rgba(255,255,255,0.06);
+}
+.mypage-logo {
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 18px; color: var(--orange); text-decoration: none;
+  margin-bottom: 32px; display: block;
+}
+.mypage-logo span { color: #fff; }
+.mypage-username {
+  font-size: 14px; color: rgba(255,255,255,0.7);
+  margin-bottom: 28px; font-weight: 500;
+}
+.mypage-nav { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.mypage-nav button {
+  background: none; border: none; text-align: left;
+  color: rgba(255,255,255,0.4); font-size: 14px; padding: 10px 12px;
+  cursor: pointer; font-family: 'Noto Sans KR', sans-serif;
+  transition: all 0.2s; border-radius: 4px;
+}
+.mypage-nav button:hover { color: #fff; background: rgba(255,255,255,0.05); }
+.mypage-nav button.active { color: var(--orange); background: rgba(232,99,42,0.1); }
+.mypage-logout {
+  background: none; border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.3); font-size: 12px; padding: 8px;
+  cursor: pointer; font-family: 'Noto Sans KR', sans-serif;
+  transition: all 0.2s; margin-top: 16px;
+}
+.mypage-logout:hover { border-color: #E24B4A; color: #E24B4A; }
+
+.mypage-content {
+  padding: 48px; overflow-y: auto;
+}
+.mypage-content h2 {
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 28px; color: #fff; margin-bottom: 32px;
+}
+.mypage-empty { color: rgba(255,255,255,0.3); font-size: 14px; }
+
+/* Order list */
+.order-list { display: flex; flex-direction: column; gap: 16px; }
+.order-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  padding: 24px;
+}
+.order-card.cancelled { opacity: 0.5; }
+.order-card-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 16px;
+}
+.order-card-title {
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 18px; color: #fff;
+}
+.order-status {
+  font-size: 12px; padding: 4px 10px;
+  font-family: 'Oswald', sans-serif; letter-spacing: 1px;
+}
+.order-status.paid { background: rgba(232,99,42,0.15); color: var(--orange); }
+.order-status.cancelled { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.3); }
+.order-card-info {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 8px; margin-bottom: 16px;
+}
+.order-card-info div {
+  font-size: 13px; color: rgba(255,255,255,0.5);
+}
+.order-card-info span {
+  display: inline-block; min-width: 80px;
+  color: rgba(255,255,255,0.3); font-size: 11px;
+  margin-right: 8px;
+}
+.cancel-btn {
+  background: transparent;
+  border: 1px solid rgba(226,75,74,0.3);
+  color: #F09595; font-size: 12px; padding: 7px 14px;
+  cursor: pointer; transition: all 0.2s;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+.cancel-btn:hover { border-color: #E24B4A; color: #E24B4A; }
+
+/* Info form */
+.info-section {
+  font-family: 'Oswald', sans-serif;
+  font-size: 11px; letter-spacing: 2px; color: var(--orange);
+  text-transform: uppercase;
+  margin: 24px 0 14px; padding-bottom: 8px;
+  border-bottom: 1px solid rgba(232,99,42,0.2);
+}
+.info-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.info-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+.info-field label { font-size: 11px; color: rgba(255,255,255,0.4); }
+.info-field input {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #fff; padding: 10px 14px;
+  font-family: 'Noto Sans KR', sans-serif; font-size: 13px;
+  outline: none; transition: border-color 0.2s;
+}
+.info-field input:focus { border-color: var(--orange); }
+.info-success {
+  background: rgba(45,106,63,0.2); border: 1px solid rgba(45,106,63,0.4);
+  color: #97C459; font-size: 13px; padding: 10px 14px; margin-bottom: 16px;
+}
+.info-error {
+  background: rgba(226,75,74,0.12); border: 1px solid rgba(226,75,74,0.3);
+  color: #F09595; font-size: 13px; padding: 10px 14px; margin-bottom: 16px;
+}
+.info-save-btn {
+  background: var(--orange); color: #fff;
+  font-family: 'Black Han Sans', sans-serif; font-size: 16px;
+  padding: 14px 32px; border: none; cursor: pointer;
+  margin-top: 8px; transition: background 0.2s;
+}
+.info-save-btn:hover { background: var(--orange-dark); }
+
+/* Cancel modal */
+.cancel-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7); z-index: 999;
+  display: flex; align-items: center; justify-content: center;
+}
+.cancel-modal {
+  background: #231E19; border: 1px solid rgba(232,99,42,0.2);
+  padding: 36px; width: 100%; max-width: 440px;
+}
+.cancel-modal h3 {
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 22px; color: #fff; margin-bottom: 8px;
+}
+.cancel-modal p { font-size: 13px; color: rgba(255,255,255,0.4); margin-bottom: 16px; }
+.cancel-modal textarea {
+  width: 100%; background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #fff; padding: 12px 14px; font-size: 13px;
+  font-family: 'Noto Sans KR', sans-serif; outline: none; resize: none;
+}
+.cancel-modal textarea:focus { border-color: var(--orange); }
+.cancel-modal-btns { display: flex; gap: 10px; margin-top: 16px; }
+.cancel-modal-back {
+  flex: 1; background: transparent;
+  border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.5); font-size: 14px; padding: 12px;
+  cursor: pointer; font-family: 'Noto Sans KR', sans-serif;
+}
+.cancel-modal-confirm {
+  flex: 1; background: #E24B4A; color: #fff;
+  border: none; font-family: 'Black Han Sans', sans-serif;
+  font-size: 16px; padding: 12px; cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .mypage { grid-template-columns: 1fr; }
+  .mypage-sidebar { padding: 24px 20px; flex-direction: row; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .mypage-nav { flex-direction: row; }
+  .mypage-content { padding: 24px 20px; }
+  .order-card-info { grid-template-columns: 1fr; }
+  .info-row { grid-template-columns: 1fr; }
+}

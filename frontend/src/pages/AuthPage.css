@@ -1,0 +1,79 @@
+.auth-page {
+  min-height: 100vh;
+  background: var(--dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+.auth-box {
+  background: #231E19;
+  border: 1px solid rgba(232,99,42,0.2);
+  padding: 48px;
+  width: 100%;
+  max-width: 440px;
+}
+.auth-box.wide { max-width: 600px; }
+.auth-logo {
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 20px; color: var(--orange);
+  text-decoration: none; display: block; margin-bottom: 24px;
+}
+.auth-logo span { color: #fff; }
+.auth-box h2 {
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 28px; color: #fff;
+  margin-bottom: 28px;
+}
+.auth-section-title {
+  font-family: 'Oswald', sans-serif;
+  font-size: 11px; letter-spacing: 2px; color: var(--orange);
+  text-transform: uppercase;
+  margin: 24px 0 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(232,99,42,0.2);
+}
+.auth-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+}
+.auth-field {
+  display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px;
+}
+.auth-field label {
+  font-size: 11px; color: rgba(255,255,255,0.4); letter-spacing: 0.5px;
+}
+.required { color: var(--orange); }
+.auth-field input {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #fff; padding: 10px 14px;
+  font-family: 'Noto Sans KR', sans-serif; font-size: 13px;
+  outline: none; transition: border-color 0.2s;
+}
+.auth-field input:focus { border-color: var(--orange); }
+.auth-field input::placeholder { color: rgba(255,255,255,0.2); }
+.auth-error {
+  background: rgba(226,75,74,0.12);
+  border: 1px solid rgba(226,75,74,0.3);
+  color: #F09595; font-size: 13px; padding: 10px 14px;
+  margin-bottom: 16px;
+}
+.auth-btn {
+  width: 100%; background: var(--orange); color: #fff;
+  font-family: 'Black Han Sans', sans-serif; font-size: 17px;
+  padding: 16px; border: none; cursor: pointer;
+  margin-top: 8px; transition: background 0.2s;
+}
+.auth-btn:hover:not(:disabled) { background: var(--orange-dark); }
+.auth-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.auth-link {
+  text-align: center; margin-top: 20px;
+  font-size: 13px; color: rgba(255,255,255,0.4);
+}
+.auth-link a { color: var(--orange); text-decoration: none; }
+.auth-link a:hover { text-decoration: underline; }
+
+@media (max-width: 600px) {
+  .auth-box { padding: 28px 20px; }
+  .auth-row { grid-template-columns: 1fr; }
+}

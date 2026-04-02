@@ -1,9 +1,7 @@
 .modal-overlay {
   position: fixed; inset: 0;
   background: rgba(0,0,0,0.85);
-  z-index: 999;
-  overflow-y: auto;
-  padding: 40px 20px;
+  z-index: 999; overflow-y: auto; padding: 40px 20px;
 }
 .modal {
   max-width: 700px; margin: 0 auto;
@@ -15,7 +13,7 @@
   position: absolute; top: 16px; right: 20px;
   background: none; border: none;
   color: rgba(255,255,255,0.3); font-size: 22px; cursor: pointer;
-  transition: color 0.2s; line-height: 1;
+  transition: color 0.2s;
 }
 .modal-close:hover { color: #fff; }
 .modal h2 {
@@ -23,31 +21,47 @@
   font-size: 28px; color: #fff; margin-bottom: 6px;
 }
 .modal-sub {
-  font-size: 13px; color: rgba(255,255,255,0.4);
-  font-weight: 300; margin-bottom: 32px;
-  border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 20px;
+  font-size: 13px; color: rgba(255,255,255,0.4); font-weight: 300;
+  margin-bottom: 24px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 20px;
 }
+.form-errors {
+  background: rgba(226,75,74,0.1); border: 1px solid rgba(226,75,74,0.3);
+  color: #F09595; font-size: 13px; padding: 14px 16px; margin-bottom: 20px; line-height: 1.9;
+}
+.required { color: var(--orange); }
 .form-section-title {
-  font-family: 'Oswald', sans-serif;
-  font-size: 11px; letter-spacing: 2.5px; color: var(--orange);
-  text-transform: uppercase;
+  font-family: 'Oswald', sans-serif; font-size: 11px; letter-spacing: 2.5px;
+  color: var(--orange); text-transform: uppercase;
   margin: 28px 0 14px; padding-bottom: 8px;
   border-bottom: 1px solid rgba(232,99,42,0.2);
+  display: flex; align-items: center; gap: 8px;
 }
-.form-row {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;
+.month-count-badge {
+  font-family: 'Noto Sans KR', sans-serif; font-size: 11px; color: var(--orange);
+  background: rgba(232,99,42,0.12); padding: 2px 8px;
+  font-weight: 400; letter-spacing: 0; text-transform: none;
 }
 .form-group { display: flex; flex-direction: column; gap: 5px; }
 .form-label { font-size: 11px; color: rgba(255,255,255,0.4); letter-spacing: 0.5px; }
 .form-input {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
   color: #fff; padding: 10px 14px;
   font-family: 'Noto Sans KR', sans-serif; font-size: 13px; font-weight: 300;
   outline: none; transition: border-color 0.2s; width: 100%;
 }
 .form-input:focus { border-color: var(--orange); }
 .form-input::placeholder { color: rgba(255,255,255,0.2); }
+.form-input option { background: #1A1612; }
+
+/* Shipping info */
+.shipping-info-box {
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  padding: 14px 16px; margin-bottom: 4px;
+}
+.shipping-info-label { font-size: 11px; color: rgba(255,255,255,0.3); letter-spacing: 1px; margin-bottom: 6px; }
+.shipping-info-addr { font-size: 13px; color: rgba(255,255,255,0.7); }
+.shipping-info-warn { font-size: 13px; color: #F09595; }
+.shipping-info-warn a { color: var(--orange); }
 
 /* Run table */
 .run-table-wrap { overflow-x: auto; margin-bottom: 8px; }
@@ -55,10 +69,9 @@
 .run-table th {
   font-size: 10px; letter-spacing: 1px; color: rgba(255,255,255,0.35);
   font-family: 'Oswald', sans-serif; text-transform: uppercase;
-  padding: 8px 8px; text-align: left;
-  border-bottom: 1px solid rgba(255,255,255,0.08); font-weight: 400;
+  padding: 8px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.08); font-weight: 400;
 }
-.run-table td { padding: 4px 4px; }
+.run-table td { padding: 4px; }
 .td-input {
   background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
   color: #fff; font-size: 12px; font-family: 'Noto Sans KR', sans-serif;
@@ -67,30 +80,24 @@
 .td-input:focus { border-color: var(--orange); }
 .td-input::placeholder { color: rgba(255,255,255,0.15); }
 .remove-btn {
-  background: transparent; border: none;
-  color: rgba(255,255,255,0.2); font-size: 18px; cursor: pointer;
-  padding: 6px 10px; transition: color 0.2s;
+  background: transparent; border: none; color: rgba(255,255,255,0.2);
+  font-size: 18px; cursor: pointer; padding: 6px 10px; transition: color 0.2s;
 }
 .remove-btn:hover { color: #E24B4A; }
 .add-row-btn {
-  background: transparent;
-  border: 1px dashed rgba(255,255,255,0.15);
-  color: rgba(255,255,255,0.35);
-  font-family: 'Noto Sans KR', sans-serif; font-size: 12px;
-  padding: 9px 16px; width: 100%; cursor: pointer;
-  transition: all 0.2s; margin-top: 4px;
+  background: transparent; border: 1px dashed rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.35); font-family: 'Noto Sans KR', sans-serif;
+  font-size: 12px; padding: 9px 16px; width: 100%;
+  cursor: pointer; transition: all 0.2s; margin-top: 4px;
 }
 .add-row-btn:hover { border-color: var(--orange); color: var(--orange); }
 
 /* Piece selector */
 .piece-selector { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 4px; }
-.piece-option {
-  display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer;
-}
+.piece-option { display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; }
 .piece-visual {
   width: 50px; height: 100px;
-  display: flex; align-items: center; justify-content: center;
-  transition: border-color 0.2s;
+  display: flex; align-items: center; justify-content: center; transition: border-color 0.2s;
 }
 .piece-upload {
   width: 50px; height: 100px;
@@ -106,10 +113,7 @@
 .piece-hint { font-size: 11px; color: rgba(255,255,255,0.2); margin-top: 10px; font-weight: 300; }
 
 /* Awards */
-.award-entry {
-  display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px;
-  align-items: center; margin-bottom: 8px;
-}
+.award-entry { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: center; margin-bottom: 8px; }
 
 /* Photos */
 .photo-upload-area {
@@ -129,12 +133,49 @@
   padding: 18px; border: none; cursor: pointer;
   letter-spacing: 0.5px; margin-top: 28px; transition: background 0.2s;
 }
-.btn-submit:hover:not(:disabled) { background: var(--orange-dark); }
-.btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-submit:hover { background: var(--orange-dark); }
+
+/* Price confirm modal */
+.price-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 1100;
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+}
+.price-modal {
+  background: #1A1612; border: 1px solid rgba(232,99,42,0.3);
+  padding: 40px; max-width: 400px; width: 100%;
+}
+.price-modal h3 {
+  font-family: 'Black Han Sans', sans-serif; font-size: 24px; color: #fff; margin-bottom: 24px;
+}
+.price-breakdown { display: flex; flex-direction: column; margin-bottom: 12px; }
+.price-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 14px;
+}
+.price-row:last-child { border-bottom: none; }
+.price-row span { color: rgba(255,255,255,0.5); }
+.price-row strong { color: #fff; }
+.price-row.total { margin-top: 4px; }
+.price-row.total span { color: rgba(255,255,255,0.7); font-size: 15px; }
+.price-row.total strong { color: var(--orange); font-size: 20px; }
+.price-note { font-size: 11px; color: rgba(255,255,255,0.2); margin-bottom: 24px; line-height: 1.6; }
+.price-modal-btns { display: flex; gap: 10px; }
+.price-back-btn {
+  flex: 1; background: transparent; border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.5); font-size: 14px; padding: 14px;
+  cursor: pointer; font-family: 'Noto Sans KR', sans-serif; transition: all 0.2s;
+}
+.price-back-btn:hover { border-color: rgba(255,255,255,0.4); color: #fff; }
+.price-confirm-btn {
+  flex: 2; background: var(--orange); color: #fff;
+  font-family: 'Black Han Sans', sans-serif; font-size: 17px;
+  padding: 14px; border: none; cursor: pointer; transition: background 0.2s;
+}
+.price-confirm-btn:hover:not(:disabled) { background: var(--orange-dark); }
+.price-confirm-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
 @media (max-width: 600px) {
   .modal { padding: 28px 16px; }
-  .form-row { grid-template-columns: 1fr; }
   .award-entry { grid-template-columns: 1fr auto; }
   .award-entry input:first-child { grid-column: 1 / -1; }
 }
