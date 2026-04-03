@@ -5,13 +5,9 @@ from sqlalchemy.orm import Session
 from database import get_db
 from auth import get_current_user
 import models
-from services.running_book import create_running_book
-import traceback
+from services.running_book import create_running_book, calc_price
 
 router = APIRouter()
-
-BASE_PRICE = 12000
-PRICE_PER_MONTH = 1000
 
 class RunRecord(BaseModel):
     date: str
@@ -30,19 +26,14 @@ class CreateBookRequest(BaseModel):
     runRecords: list[RunRecord]
     awards: Optional[list[Award]] = []
 
-def calc_price(run_records: list) -> dict:
-    months = set()
-    for r in run_records:
-        if r.get("date") and r.get("km"):
-            months.add(r["date"][:7])
-    month_count = len(months)
-    total = BASE_PRICE + (month_count * PRICE_PER_MONTH)
-    return {
-        "base_price": BASE_PRICE,
-        "month_count": month_count,
-        "month_price": month_count * PRICE_PER_MONTH,
-        "total_price": total,
-    }
+@router.post("/estimate")
+async def estimate_price(
+    req: CreateBookRequest,
+    current_user: models.User = Depends(get_current_user),
+):
+    has_appendix = any(a.name for a in (req.awards or []))
+    price_info = calc_price(has_appendix)
+    return {"success": True, "data": price_info}
 
 @router.post("/create")
 async def create_book(
@@ -51,22 +42,23 @@ async def create_book(
     db: Session = Depends(get_db)
 ):
     try:
-        price_info = calc_price([r.dict() for r in req.runRecords])
+        import traceback
+        has_appendix = any(a.name for a in (req.awards or []))
+        price_info = calc_price(has_appendix)
 
         order_data = {
             **req.dict(),
-            "name": current_user.name,
+            "name":  current_user.name,
             "email": current_user.email,
         }
         result = await create_running_book(order_data)
 
-        # DB에 주문 저장
         order = models.Order(
             user_id=current_user.id,
             book_uid=result["book_uid"],
             book_title=req.bookTitle,
             record_year=req.recordYear,
-            month_count=price_info["month_count"],
+            month_count=12,
             total_price=price_info["total_price"],
             status="paid",
         )
@@ -78,18 +70,11 @@ async def create_book(
             "success": True,
             "data": {
                 **result,
-                "order_id": order.id,
+                "order_id":   order.id,
                 "price_info": price_info,
             }
         }
     except Exception as e:
+        import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
-
-@router.post("/estimate")
-async def estimate_price(
-    req: CreateBookRequest,
-    current_user: models.User = Depends(get_current_user),
-):
-    price_info = calc_price([r.dict() for r in req.runRecords])
-    return {"success": True, "data": price_info}

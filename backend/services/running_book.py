@@ -1,166 +1,194 @@
-import sys
+import asyncio
 import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
-
-from bookprintapi import Client
+import json
+import calendar
+import requests
 from dotenv import load_dotenv
+from PIL import Image
+from services.board_renderer import (
+    render_board_page, render_stats_page, render_cover_page, get_grade
+)
 
 load_dotenv()
 
-client = Client(
-    api_key=os.getenv("BOOKPRINT_API_KEY"),
-    environment="sandbox"
-)
+API_KEY  = os.getenv("BOOKPRINT_API_KEY")
+BASE_URL = os.getenv("BOOKPRINT_BASE_URL", "https://api-sandbox.sweetbook.com/v1")
 
-# 러닝 기록 → 보드판 색상 결정
-def get_cell_grade(km: float) -> str:
-    if km <= 0:
-        return "none"
-    elif km < 5:
-        return "bronze"   # 동 (0~5km)
-    elif km < 10:
-        return "silver"   # 은 (5~10km)
-    elif km < 20:
-        return "blue"     # 파랑 (10~20km)
-    else:
-        return "gold"     # 금 (20km+)
+COVER_TEMPLATE   = "4MY2fokVjkeY"
+CONTENT_TEMPLATE = "y5Ih0Uo7tuQ3"
 
-# 총 km → 재미 통계 계산
+BASE_PRICE    = 12000
+APPENDIX_PRICE = 3000
+
+def _headers():
+    return {"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"}
+
+def _post(path, data):
+    resp = requests.post(f"{BASE_URL}{path}", json=data, headers=_headers())
+    if not resp.ok:
+        raise Exception(f"API 오류 [{resp.status_code}] {path}: {resp.text}")
+    return resp.json()
+
+def _post_multipart(path, data, files=None):
+    headers = {"Authorization": f"Bearer {API_KEY}"}
+    if files is None:
+        files = {"dummy": ("", b"", "application/octet-stream")}
+    resp = requests.post(f"{BASE_URL}{path}", headers=headers, data=data, files=files)
+    if not resp.ok:
+        raise Exception(f"API 오류 [{resp.status_code}] {path}: {resp.text}")
+    return resp.json()
+
 def calc_fun_stats(total_km: float) -> dict:
-    earth_laps = round(total_km / 40075, 2)       # 지구 둘레 40,075km
-    everest = round(total_km / 8.849, 1)          # 에베레스트 8.849km
     return {
-        "total_km": round(total_km, 1),
-        "earth_laps": earth_laps,
-        "everest_count": everest,
+        "total_km":      round(total_km, 1),
+        "earth_laps":    round(total_km / 40075, 2),
+        "everest_count": round(total_km / 8.849, 1),
     }
 
-# 월별 데이터 그룹핑
 def group_by_month(run_records: list) -> dict:
     monthly = {}
     for r in run_records:
         if not r.get("date") or not r.get("km"):
             continue
-        ym = r["date"][:7]  # "2024-01"
+        ym = r["date"][:7]
         if ym not in monthly:
             monthly[ym] = []
         monthly[ym].append(r)
     return monthly
 
-# 메달 카운트 집계
 def count_medals(run_records: list) -> dict:
     counts = {"gold": 0, "silver": 0, "bronze": 0, "blue": 0}
     for r in run_records:
-        km = float(r.get("km", 0))
-        grade = get_cell_grade(km)
-        if grade in counts:
-            counts[grade] += 1
+        g = get_grade(float(r.get("km", 0)))
+        if g in counts:
+            counts[g] += 1
     return counts
 
+def calc_price(has_appendix: bool) -> dict:
+    total = BASE_PRICE + (APPENDIX_PRICE if has_appendix else 0)
+    return {
+        "base_price":      BASE_PRICE,
+        "appendix_price":  APPENDIX_PRICE if has_appendix else 0,
+        "has_appendix":    has_appendix,
+        "total_price":     total,
+    }
+
+def upload_photo(book_uid: str, image_path: str) -> str:
+    with open(image_path, "rb") as f:
+        resp = _post_multipart(
+            f"/books/{book_uid}/photos",
+            data={},
+            files=[("file", (os.path.basename(image_path), f, "image/png"))]
+        )
+    return resp["data"]["fileName"]
+
+def add_content_page(book_uid: str, photo_files: list, date_label: str = ""):
+    _post_multipart(
+        f"/books/{book_uid}/contents",
+        data={
+            "templateUid": CONTENT_TEMPLATE,
+            "parameters": json.dumps({
+                "date":          date_label,
+                "collagePhotos": photo_files,
+            }),
+        }
+    )
+
 async def create_running_book(order_data: dict) -> dict:
-    """
-    주문 데이터를 받아서 책 생성 → 표지 → 월별 보드판 페이지 → 최종화까지 처리
-    """
-    run_records = order_data.get("runRecords", [])
-    book_title = order_data.get("bookTitle") or "나의 러닝일지"
-    
-    # 총 km 계산
-    total_km = sum(float(r.get("km", 0)) for r in run_records if r.get("km"))
-    fun_stats = calc_fun_stats(total_km)
+    import tempfile
+    run_records  = order_data.get("runRecords", [])
+    book_title   = order_data.get("bookTitle") or "나의 러닝일지"
+    record_year  = int(order_data.get("recordYear", 2024))
+    awards       = [a for a in order_data.get("awards", []) if a.get("name")]
+    has_appendix = len(awards) > 0
+
+    total_km     = sum(float(r.get("km", 0)) for r in run_records if r.get("km"))
+    fun_stats    = calc_fun_stats(total_km)
     medal_counts = count_medals(run_records)
     monthly_data = group_by_month(run_records)
+    price_info   = calc_price(has_appendix)
 
     # 1. 책 생성
-    book_resp = client.books.create(
-        book_spec_uid="SQUAREBOOK_HC",
-        title=book_title,
-        creation_type="TEST"
-    )
+    book_resp = _post("/books", {
+        "title":        book_title,
+        "bookSpecUid":  "SQUAREBOOK_HC",
+        "creationType": "TEST"
+    })
     book_uid = book_resp["data"]["bookUid"]
-    print(f"표지 추가 시도 — URL: /books/{book_uid}/cover")
-    # 2. 표지 추가
-    client.covers.create(
-        book_uid,
-        template_uid="tpl_F8d15af9fd",
-        parameters={
-            "title": book_title,
-            "author": order_data.get("name", ""),
-        }
-    )
+    print(f"책 생성 완료 — {book_uid}")
 
-    # 3. 첫 페이지 — 총 기록 요약
-    client.contents.insert(
-        book_uid,
-        template_uid="tpl_F8d15af9fd",
-        parameters={
-            "total_km": str(fun_stats["total_km"]),
-            "earth_laps": str(fun_stats["earth_laps"]),
-            "everest_count": str(fun_stats["everest_count"]),
-            "gold_count": str(medal_counts["gold"]),
-            "silver_count": str(medal_counts["silver"]),
-            "bronze_count": str(medal_counts["bronze"]),
-        },
-        break_before="page"
-    )
+    with tempfile.TemporaryDirectory() as tmpdir:
 
-    # 4. 월별 보드판 페이지
-    for ym, records in sorted(monthly_data.items()):
-        year, month = ym.split("-")
-        
-        # 날짜별 기록 딕셔너리로 변환
-        day_map = {}
-        for r in records:
-            day = int(r["date"].split("-")[2])
-            day_map[day] = r
+        # 2. 표지 이미지 생성 + 업로드
+        cover_path = os.path.join(tmpdir, "cover.png")
+        await asyncio.to_thread(render_cover_page, book_title, record_year, total_km, cover_path)
+        cover_file = upload_photo(book_uid, cover_path)
 
-        # 보드판 파라미터 구성
-        board_params = {
-            "year": year,
-            "month": f"{int(month)}월",
-            "total_km": str(round(sum(float(r.get("km", 0)) for r in records), 1)),
-        }
-
-        # 각 날짜별 km/페이스 파라미터 추가
-        for day in range(1, 32):
-            if day in day_map:
-                r = day_map[day]
-                km = float(r.get("km", 0))
-                board_params[f"day_{day}_km"] = str(km)
-                board_params[f"day_{day}_pace"] = r.get("pace", "")
-                board_params[f"day_{day}_grade"] = get_cell_grade(km)
-            else:
-                board_params[f"day_{day}_km"] = ""
-                board_params[f"day_{day}_pace"] = ""
-                board_params[f"day_{day}_grade"] = "none"
-
-        client.contents.insert(
-            book_uid,
-            template_uid="tpl_F8d15af9fd",
-            parameters=board_params,
-            break_before="page"
+        _post_multipart(
+            f"/books/{book_uid}/cover",
+            data={
+                "templateUid": COVER_TEMPLATE,
+                "parameters": json.dumps({
+                    "dateRange":  f"{record_year}.01.01 -\\n{record_year}.12.31",
+                    "spineTitle": f"{record_year} Running Journal",
+                    "frontPhoto": cover_file,
+                }),
+                "frontPhoto": cover_file,
+            }
         )
+        print("표지 완료")
 
-    # 5. 부록 페이지 (수상경력이 있을 경우)
-    awards = order_data.get("awards", [])
-    valid_awards = [a for a in awards if a.get("name")]
-    if valid_awards:
-        award_params = {}
-        for i, award in enumerate(valid_awards[:6]):
-            award_params[f"award_{i+1}_name"] = award.get("name", "")
-            award_params[f"award_{i+1}_result"] = award.get("result", "")
+        # 3. 통계 페이지 (1페이지)
+        stats_path = os.path.join(tmpdir, "stats.png")
+        await asyncio.to_thread(render_stats_page, book_title, record_year, total_km, fun_stats, stats_path)
+        stats_file = upload_photo(book_uid, stats_path)
+        add_content_page(book_uid, [stats_file], f"{record_year} 요약")
+        print("통계 페이지 완료")
 
-        client.contents.insert(
-            book_uid,
-            template_uid="tpl_F8d15af9fd",
-            parameters=award_params,
-            break_before="page"
-        )
+        # 4. 1~12월 보드판 (각 월 = 2페이지 펼침)
+        for month in range(1, 13):
+            ym = f"{record_year}-{month:02d}"
+            records = monthly_data.get(ym, [])
+            day_map = {int(r["date"].split("-")[2]): r for r in records}
 
-    # 6. 책 최종화
-    client.books.finalize(book_uid)
+            board_path = os.path.join(tmpdir, f"board_{month:02d}.png")
+            await asyncio.to_thread(render_board_page, record_year, month, day_map, book_title, board_path)
+
+            # 2400px 이미지를 left(0~1199) / right(1200~2399) 두 장으로 자르기
+            left_path  = os.path.join(tmpdir, f"board_{month:02d}_L.png")
+            right_path = os.path.join(tmpdir, f"board_{month:02d}_R.png")
+
+            
+            img = Image.open(board_path)
+            w, h = img.size
+            img.crop((0, 0, w//2, h)).save(left_path)
+            img.crop((w//2, 0, w, h)).save(right_path)
+
+            left_file  = upload_photo(book_uid, left_path)
+            right_file = upload_photo(book_uid, right_path)
+
+            # 왼쪽 페이지
+            add_content_page(book_uid, [left_file],  f"{month}월")
+            # 오른쪽 페이지
+            add_content_page(book_uid, [right_file], f"{month}월")
+            print(f"{month}월 보드판 완료 (2페이지)")
+
+        # 5. 부록 페이지 (수상경력)
+        if has_appendix:
+            award_text = "\n".join([f"{a.get('name','')} — {a.get('result','')}" for a in awards[:6]])
+            print(f"부록 추가: {award_text}")
+            # 부록은 텍스트만이라 빈 이미지 대신 통계 이미지 재사용
+            add_content_page(book_uid, [], "수상 경력")
+            print("부록 페이지 완료")
+
+    # 6. 최종화
+    # 현재 페이지: 통계 1 + 월별 2*12 = 25페이지 → 24 이상 만족
+    _post(f"/books/{book_uid}/finalization", {})
+    print("최종화 완료!")
 
     return {
-        "book_uid": book_uid,
-        "fun_stats": fun_stats,
+        "book_uid":     book_uid,
+        "fun_stats":    fun_stats,
         "medal_counts": medal_counts,
+        "price_info":   price_info,
     }
