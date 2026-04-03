@@ -76,7 +76,7 @@ export default function Landing() {
 
       <footer className="footer">
         <div className="footer-logo">러닝일지북</div>
-        <p>© 2024 러닝일지북. 커스텀 러닝 기록북 제작 서비스.</p>
+        <p>© 2026 러닝일지북. 커스텀 러닝 기록북 제작 서비스.</p>
       </footer>
 
       <OrderModal isOpen={modalOpen} onClose={() => setModalOpen(false)} />
