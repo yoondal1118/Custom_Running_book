@@ -1,89 +1,64 @@
-.pages-section {
-  padding: 100px 80px;
-  background: #fff;
-}
+.pages-section { padding: 100px 80px; background: #fff; }
 .pages-section h2 {
   font-family: 'Black Han Sans', sans-serif;
-  font-size: clamp(28px, 4vw, 48px);
-  line-height: 1.1;
-  color: var(--dark);
-  letter-spacing: -0.5px;
+  font-size: clamp(28px, 4vw, 48px); line-height: 1.1; color: var(--dark); letter-spacing: -0.5px;
 }
-.pages-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 24px;
-  margin-top: 60px;
-}
-.page-card {
-  border: 1px solid var(--gray-light);
-  overflow: hidden;
-  transition: transform 0.25s, box-shadow 0.25s;
-}
-.page-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-}
-.page-card-preview {
-  height: 220px;
-  display: flex; align-items: center; justify-content: center;
-}
+.pages-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-top: 60px; }
+.page-card { border: 1px solid var(--gray-light); overflow: hidden; transition: transform 0.25s, box-shadow 0.25s; }
+.page-card:hover { transform: translateY(-6px); box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+.page-card-preview { height: 240px; display: flex; align-items: center; justify-content: center; }
 .cover-bg { background: #1A1612; }
 .first-bg { background: #FAF6EE; border-bottom: 1px solid var(--gray-light); }
 .monthly-bg { background: #EDF4FF; border-bottom: 1px solid #C5DAFF; }
 .appendix-bg { background: #FEF3EE; border-bottom: 1px solid #FDDCC9; }
-
 .page-card-info { padding: 20px; }
-.page-card-num {
-  font-family: 'Oswald', sans-serif;
-  font-size: 11px; letter-spacing: 2px;
-  color: var(--orange); text-transform: uppercase; margin-bottom: 6px;
-}
-.page-card-title {
-  font-family: 'Black Han Sans', sans-serif;
-  font-size: 17px; color: var(--dark); margin-bottom: 8px;
-}
+.page-card-num { font-family: 'Oswald', sans-serif; font-size: 11px; letter-spacing: 2px; color: var(--orange); text-transform: uppercase; margin-bottom: 6px; }
+.page-card-title { font-family: 'Black Han Sans', sans-serif; font-size: 17px; color: var(--dark); margin-bottom: 8px; }
 .page-card-desc { font-size: 12px; color: var(--gray); line-height: 1.7; font-weight: 300; }
 
-/* Mini previews */
+/* Mini cover */
 .mini-cover {
   width: 90px; height: 126px;
   background: #1A1612; border: 0.5px solid rgba(232,99,42,0.4);
   padding: 9px; position: relative;
   box-shadow: 4px 4px 0 rgba(232,99,42,0.2);
+  display: flex; flex-direction: column;
 }
-.mini-cover-stripe { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--orange); }
-.mini-cover-title {
-  font-family: 'Black Han Sans', sans-serif;
-  font-size: 11px; color: #fff; line-height: 1.2; padding-left: 8px;
-}
-.mini-stats { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.mini-cover-stripe { position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--orange); }
+.mini-cover-tag { font-size: 5px; color: rgba(255,255,255,0.2); letter-spacing: 1px; padding-left: 7px; margin-bottom: 6px; }
+.mini-cover-title { font-family: 'Black Han Sans', sans-serif; font-size: 11px; color: #fff; line-height: 1.3; padding-left: 7px; flex: 1; }
+.mini-cover-title em { color: var(--orange); font-style: normal; }
+.mini-cover-year { font-family: 'Oswald', sans-serif; font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.1); padding-left: 7px; margin-top: 4px; }
+
+/* Mini stats */
+.mini-stats { display: flex; flex-direction: column; gap: 10px; align-items: center; }
 .mini-stat-row { display: flex; align-items: center; gap: 8px; }
-.mini-stat-icon {
-  width: 26px; height: 26px; border-radius: 50%;
-  background: var(--orange); color: #fff;
-  display: flex; align-items: center; justify-content: center; font-size: 12px;
-}
+.mini-stat-icon { width: 26px; height: 26px; border-radius: 50%; background: var(--orange); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; }
 .mini-stat-val { font-family: 'Oswald', sans-serif; font-size: 13px; color: var(--dark); }
 .mini-stat-label { font-size: 9px; color: var(--gray); }
-.mini-board { width: 160px; padding: 8px; background: #fff; border: 1px solid #C5DAFF; border-radius: 4px; }
-.mini-board-title { font-family: 'Black Han Sans', sans-serif; font-size: 9px; color: #1E4FA3; margin-bottom: 4px; text-align: center; }
-.mini-board-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
-.mini-board-cell {
-  aspect-ratio: 1; background: #EDF4FF; border: 0.5px solid #C5DAFF; border-radius: 1px;
-  font-size: 5px; color: #1E4FA3; display: flex; align-items: center; justify-content: center;
-  font-family: 'Oswald', sans-serif; font-weight: 600;
+
+/* Mini board game */
+.mini-board-game { width: 180px; padding: 8px; background: #1B2A4A; border-radius: 6px; }
+.mini-board-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.mini-board-title { font-size: 9px; font-weight: 700; color: #fff; }
+.mini-board-total { font-size: 9px; color: #F5C518; }
+.mini-board-grid {
+  display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; margin-bottom: 6px;
 }
-.mini-board-cell.run { background: var(--orange); color: #fff; }
-.mini-board-cell.piece { background: #1E4FA3; color: #fff; }
+.mini-bc {
+  aspect-ratio: 1; border-radius: 50%; border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.08);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 5px; color: rgba(255,255,255,0.4); font-weight: 600;
+}
+.mini-bc.start { background: rgba(232,99,42,0.8); color: #fff; border-color: var(--orange); }
+.mini-board-legend { display: flex; gap: 8px; justify-content: center; }
+.mini-board-legend span { font-size: 8px; color: rgba(255,255,255,0.5); }
+
+/* Mini appendix */
 .mini-appendix { width: 160px; padding: 10px; background: #fff; border: 1px solid #FDDCC9; border-radius: 4px; }
 .mini-append-item { font-size: 9px; color: var(--dark); margin-bottom: 5px; }
-.mini-photos { display: flex; gap: 4px; margin-top: 6px; }
-.mini-photo {
-  width: 40px; height: 28px; background: #F0E8DC; border: 0.5px solid #FDDCC9;
-  border-radius: 2px; display: flex; align-items: center; justify-content: center;
-  font-size: 7px; color: var(--gray);
-}
+.mini-photo { width: 40px; height: 28px; background: #F0E8DC; border: 0.5px solid #FDDCC9; border-radius: 2px; display: flex; align-items: center; justify-content: center; font-size: 7px; color: var(--gray); }
 
 @media (max-width: 900px) {
   .pages-section { padding: 60px 24px; }

@@ -15,7 +15,7 @@ export default function PriceSection({ onOrderClick }) {
       <div className="section-label" style={{ justifyContent: 'center' }}>가격</div>
       <h2>단 한 권의<br />특별한 책</h2>
       <div className="price-card">
-        <div className="price-main"><sup>₩</sup>39,000</div>
+        <div className="price-main"><sup>₩</sup>12,000</div>
         <div className="price-sub">배송비 포함 · VAT 포함</div>
         <div className="price-includes">
           {includes.map(item => (

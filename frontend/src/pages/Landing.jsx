@@ -7,16 +7,17 @@ import OrderModal from '../components/OrderModal'
 import './Landing.css'
 
 const FEATURES = [
-  '월별 보드판 디자인', '날짜별 km · 페이스 기록',
-  '지구 바퀴수 자동 계산', '수상경력 · 사진 부록', '커스텀 말 이미지'
+  '보드게임판 디자인', '1~12월 전월 수록',
+  '지구 바퀴수 자동 계산', '금·은·동 달성 표시',
+  '수상경력·사진 부록 선택'
 ]
 
 const ORDER_STEPS = [
-  { num: 1, title: '기간 선택', desc: '기록을 남길 시작일과 종료일을 선택합니다' },
-  { num: 2, title: '러닝 기록 입력', desc: '날짜별로 달린 거리(km)와 페이스(분/km)를 입력합니다' },
-  { num: 3, title: '말 이미지 선택', desc: '보드판에 올라갈 말을 색상으로 선택하거나 직접 이미지를 업로드합니다' },
-  { num: 4, title: '부록 정보 입력 (선택)', desc: '수상경력이나 특별한 사진이 있다면 부록에 추가할 수 있습니다' },
-  { num: 5, title: '주문 완료', desc: '제작 후 약 2주 내 배송됩니다' },
+  { num: 1, title: '기록 년도 선택', desc: '기록을 남길 연도를 선택합니다 (2021~2025)' },
+  { num: 2, title: '러닝 기록 입력', desc: '날짜별로 달린 거리(km)와 페이스를 입력합니다' },
+  { num: 3, title: '말 이미지 선택', desc: '보드게임판에 올라갈 말을 색상으로 선택하거나 직접 업로드합니다' },
+  { num: 4, title: '부록 입력 (선택)', desc: '수상경력이나 특별한 사진이 있다면 부록에 추가할 수 있습니다 (+3,000원)' },
+  { num: 5, title: '제출서 확인 → 책 생성', desc: '입력한 내용을 확인하고, 책 생성 후 최종 주문합니다' },
 ]
 
 export default function Landing() {
@@ -46,7 +47,7 @@ export default function Landing() {
           <div className="order-left">
             <div className="section-label" style={{ color: '#F5A06B' }}>주문 안내</div>
             <h2>직접 기록을<br />입력하고<br /><em>주문하세요</em></h2>
-            <p>아래 양식에 날짜별 러닝 기록을 입력하면<br />약 2주 내 완성본을 배송해드립니다.</p>
+            <p>날짜별 러닝 기록을 입력하면<br />약 2주 내 완성본을 배송해드립니다.</p>
             <div className="order-steps">
               {ORDER_STEPS.map(s => (
                 <div key={s.num} className="order-step">

@@ -3,8 +3,8 @@ import os
 import json
 import calendar
 import requests
+import base64
 from dotenv import load_dotenv
-from PIL import Image
 from services.board_renderer import (
     render_board_page, render_stats_page, render_cover_page, get_grade
 )
@@ -17,7 +17,7 @@ BASE_URL = os.getenv("BOOKPRINT_BASE_URL", "https://api-sandbox.sweetbook.com/v1
 COVER_TEMPLATE   = "4MY2fokVjkeY"
 CONTENT_TEMPLATE = "y5Ih0Uo7tuQ3"
 
-BASE_PRICE    = 12000
+BASE_PRICE     = 12000
 APPENDIX_PRICE = 3000
 
 def _headers():
@@ -94,8 +94,18 @@ def add_content_page(book_uid: str, photo_files: list, date_label: str = ""):
         }
     )
 
-async def create_running_book(order_data: dict) -> dict:
+def image_to_base64(path: str) -> str:
+    with open(path, "rb") as f:
+        return "data:image/png;base64," + base64.b64encode(f.read()).decode()
+
+async def create_running_book(order_data: dict, progress=None) -> dict:
     import tempfile
+    from PIL import Image
+
+    async def report(step: str, pct: int, preview_url: str = None):
+        if progress:
+            await progress(step, pct, preview_url)
+
     run_records  = order_data.get("runRecords", [])
     book_title   = order_data.get("bookTitle") or "나의 러닝일지"
     record_year  = int(order_data.get("recordYear", 2024))
@@ -106,7 +116,8 @@ async def create_running_book(order_data: dict) -> dict:
     fun_stats    = calc_fun_stats(total_km)
     medal_counts = count_medals(run_records)
     monthly_data = group_by_month(run_records)
-    price_info   = calc_price(has_appendix)
+
+    await report("책 생성 중...", 2)
 
     # 1. 책 생성
     book_resp = _post("/books", {
@@ -115,15 +126,17 @@ async def create_running_book(order_data: dict) -> dict:
         "creationType": "TEST"
     })
     book_uid = book_resp["data"]["bookUid"]
-    print(f"책 생성 완료 — {book_uid}")
+    await report("책 생성 완료", 5)
+
+    preview_b64 = None
 
     with tempfile.TemporaryDirectory() as tmpdir:
 
-        # 2. 표지 이미지 생성 + 업로드
+        # 2. 표지
+        await report("표지 생성 중...", 8)
         cover_path = os.path.join(tmpdir, "cover.png")
         await asyncio.to_thread(render_cover_page, book_title, record_year, total_km, cover_path)
         cover_file = upload_photo(book_uid, cover_path)
-
         _post_multipart(
             f"/books/{book_uid}/cover",
             data={
@@ -136,17 +149,22 @@ async def create_running_book(order_data: dict) -> dict:
                 "frontPhoto": cover_file,
             }
         )
-        print("표지 완료")
+        await report("표지 완료", 12)
 
-        # 3. 통계 페이지 (1페이지)
+        # 3. 통계 페이지
+        await report("통계 페이지 생성 중...", 15)
         stats_path = os.path.join(tmpdir, "stats.png")
         await asyncio.to_thread(render_stats_page, book_title, record_year, total_km, fun_stats, stats_path)
         stats_file = upload_photo(book_uid, stats_path)
         add_content_page(book_uid, [stats_file], f"{record_year} 요약")
-        print("통계 페이지 완료")
+        await report("통계 페이지 완료", 18)
 
-        # 4. 1~12월 보드판 (각 월 = 2페이지 펼침)
+        # 4. 1~12월 보드판
+        # 진행률: 18% ~ 90% (72% / 12달 = 6%씩)
         for month in range(1, 13):
+            pct_start = 18 + (month - 1) * 6
+            await report(f"{month}월 보드판 생성 중...", pct_start)
+
             ym = f"{record_year}-{month:02d}"
             records = monthly_data.get(ym, [])
             day_map = {int(r["date"].split("-")[2]): r for r in records}
@@ -154,11 +172,13 @@ async def create_running_book(order_data: dict) -> dict:
             board_path = os.path.join(tmpdir, f"board_{month:02d}.png")
             await asyncio.to_thread(render_board_page, record_year, month, day_map, book_title, board_path)
 
-            # 2400px 이미지를 left(0~1199) / right(1200~2399) 두 장으로 자르기
+            # 첫 번째 기록 있는 월 → 미리보기용 base64
+            if preview_b64 is None and len(records) > 0:
+                preview_b64 = image_to_base64(board_path)
+
             left_path  = os.path.join(tmpdir, f"board_{month:02d}_L.png")
             right_path = os.path.join(tmpdir, f"board_{month:02d}_R.png")
 
-            
             img = Image.open(board_path)
             w, h = img.size
             img.crop((0, 0, w//2, h)).save(left_path)
@@ -166,29 +186,25 @@ async def create_running_book(order_data: dict) -> dict:
 
             left_file  = upload_photo(book_uid, left_path)
             right_file = upload_photo(book_uid, right_path)
-
-            # 왼쪽 페이지
             add_content_page(book_uid, [left_file],  f"{month}월")
-            # 오른쪽 페이지
             add_content_page(book_uid, [right_file], f"{month}월")
-            print(f"{month}월 보드판 완료 (2페이지)")
 
-        # 5. 부록 페이지 (수상경력)
+            await report(f"{month}월 보드판 완료", pct_start + 5)
+
+        # 5. 부록
         if has_appendix:
-            award_text = "\n".join([f"{a.get('name','')} — {a.get('result','')}" for a in awards[:6]])
-            print(f"부록 추가: {award_text}")
-            # 부록은 텍스트만이라 빈 이미지 대신 통계 이미지 재사용
+            await report("부록 페이지 생성 중...", 92)
             add_content_page(book_uid, [], "수상 경력")
-            print("부록 페이지 완료")
+            await report("부록 완료", 94)
 
-    # 6. 최종화
-    # 현재 페이지: 통계 1 + 월별 2*12 = 25페이지 → 24 이상 만족
-    _post(f"/books/{book_uid}/finalization", {})
-    print("최종화 완료!")
+        # 6. 최종화
+        await report("책 최종화 중...", 96)
+        _post(f"/books/{book_uid}/finalization", {})
+        await report("완료!", 100, preview_b64)
 
     return {
         "book_uid":     book_uid,
         "fun_stats":    fun_stats,
         "medal_counts": medal_counts,
-        "price_info":   price_info,
+        "preview_b64":  preview_b64,
     }

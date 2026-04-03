@@ -9,94 +9,31 @@ const PIECE_COLORS = [
   { id: 'yellow', label: '노랑',  fill: '#D4A017', light: '#EEC04A' },
   { id: 'green',  label: '초록',  fill: '#2D6A3F', light: '#5A9E6E' },
 ]
-
 const YEARS = [2021, 2022, 2023, 2024, 2025]
 const BASE_PRICE = 12000
-const PRICE_PER_MONTH = 1000
+const APPENDIX_PRICE = 3000
 
 function PieceSVG({ fill, light }) {
   return (
     <svg width="28" height="56" viewBox="0 0 28 56" fill="none">
-      <ellipse cx="14" cy="46" rx="10" ry="6" fill={fill} opacity="0.6" />
-      <rect x="10" y="20" width="8" height="24" rx="4" fill={fill} />
-      <circle cx="14" cy="13" r="9" fill={fill} />
-      <circle cx="14" cy="13" r="5" fill={light} />
+      <ellipse cx="14" cy="46" rx="10" ry="6" fill={fill} opacity="0.6"/>
+      <rect x="10" y="20" width="8" height="24" rx="4" fill={fill}/>
+      <circle cx="14" cy="13" r="9" fill={fill}/>
+      <circle cx="14" cy="13" r="5" fill={light}/>
     </svg>
   )
 }
 
-// 가격 계산 팝업
-function PriceConfirmModal({ priceInfo, onConfirm, onClose, loading }) {
-  return (
-    <div className="price-overlay">
-      <div className="price-modal">
-        <h3>최종 가격 확인</h3>
-        <div className="price-breakdown">
-          <div className="price-row">
-            <span>기본 가격</span>
-            <strong>{BASE_PRICE.toLocaleString()}원</strong>
-          </div>
-          <div className="price-row">
-            <span>추가 기록 ({priceInfo.month_count}개월 × 1,000원)</span>
-            <strong>+{priceInfo.month_price.toLocaleString()}원</strong>
-          </div>
-          <div className="price-row total">
-            <span>최종 결제 금액</span>
-            <strong>{priceInfo.total_price.toLocaleString()}원</strong>
-          </div>
-        </div>
-        <p className="price-note">* Sandbox 환경으로 실제 결제는 이루어지지 않습니다</p>
-        <div className="price-modal-btns">
-          <button className="price-back-btn" onClick={onClose}>다시 확인</button>
-          <button className="price-confirm-btn" onClick={onConfirm} disabled={loading}>
-            {loading ? '처리 중...' : '최종 주문하기'}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-export default function OrderModal({ isOpen, onClose }) {
-  const { user, authFetch } = useAuth()
-  const navigate = useNavigate()
-
+// 단계 1: 주문서 작성
+function StepForm({ onNext, user }) {
   const [recordYear, setRecordYear] = useState(2024)
   const [selectedPiece, setSelectedPiece] = useState('blue')
   const [runRows, setRunRows] = useState([{ date: '', km: '', pace: '', memo: '' }])
   const [awards, setAwards] = useState([{ name: '', result: '' }])
-  const [photos, setPhotos] = useState([])
-  const [customPieceUrl, setCustomPieceUrl] = useState(null)
   const [bookTitle, setBookTitle] = useState('')
   const [errors, setErrors] = useState([])
-  const [showPriceModal, setShowPriceModal] = useState(false)
-  const [priceInfo, setPriceInfo] = useState(null)
-  const [submitting, setSubmitting] = useState(false)
+  const [customPieceUrl, setCustomPieceUrl] = useState(null)
 
-  useEffect(() => {
-    if (isOpen && user) {
-      // 사용자 배송지 자동 세팅은 백엔드에서 처리
-    }
-  }, [isOpen, user])
-
-  if (!isOpen) return null
-
-  // 기록한 월 수 계산
-  const getMonthCount = () => {
-    const months = new Set()
-    runRows.forEach(r => {
-      if (r.date && r.km) months.add(r.date.slice(0, 7))
-    })
-    return months.size
-  }
-
-  const calcPrice = () => {
-    const month_count = getMonthCount()
-    const month_price = month_count * PRICE_PER_MONTH
-    return { base_price: BASE_PRICE, month_count, month_price, total_price: BASE_PRICE + month_price }
-  }
-
-  // 날짜 유효성 검사 (기록 년도 내에서만)
   const handleDateChange = (i, val) => {
     if (val) {
       const year = parseInt(val.split('-')[0])
@@ -105,224 +42,403 @@ export default function OrderModal({ isOpen, onClose }) {
         return
       }
     }
-    updateRunRow(i, 'date', val)
+    setRunRows(p => p.map((r, idx) => idx === i ? { ...r, date: val } : r))
   }
 
-  // 폼 유효성 검사
   const validate = () => {
     const errs = []
     if (!bookTitle.trim()) errs.push('책 제목을 입력해주세요')
-    if (!recordYear) errs.push('기록 년도를 선택해주세요')
     if (!selectedPiece) errs.push('보드판 말을 선택해주세요')
-
-    const validRows = runRows.filter(r => r.date && r.km)
-    if (validRows.length === 0) errs.push('날짜별 러닝 기록을 1개 이상 입력해주세요')
-
+    const valid = runRows.filter(r => r.date && r.km)
+    if (valid.length === 0) errs.push('러닝 기록을 1개 이상 입력해주세요')
     runRows.forEach((r, i) => {
-      if (r.date || r.km) {
-        if (!r.date) errs.push(`${i + 1}번 기록의 날짜를 입력해주세요`)
-        if (!r.km) errs.push(`${i + 1}번 기록의 거리를 입력해주세요`)
-        if (!r.pace) errs.push(`${i + 1}번 기록의 페이스를 입력해주세요`)
-      }
+      if ((r.date || r.km) && (!r.date || !r.km || !r.pace))
+        errs.push(`${i+1}번 기록의 날짜·거리·페이스를 모두 입력해주세요`)
     })
-
-    if (!user?.address) errs.push('배송지가 등록되어 있지 않습니다. 마이페이지에서 배송지를 등록해주세요')
-
+    if (!user?.address) errs.push('배송지가 없습니다. 마이페이지에서 등록해주세요')
     return errs
   }
 
-  const handleSubmitClick = () => {
+  const handleNext = () => {
     const errs = validate()
     if (errs.length > 0) { setErrors(errs); return }
     setErrors([])
-    setPriceInfo(calcPrice())
-    setShowPriceModal(true)
+    onNext({ bookTitle, recordYear, selectedPiece, runRecords: runRows.filter(r=>r.date&&r.km), awards })
   }
 
-  const handleFinalSubmit = async () => {
-    setSubmitting(true)
-    try {
-      // 1. 책 생성
-      const bookRes = await authFetch('/api/books/create', {
-        method: 'POST',
-        body: JSON.stringify({
-          bookTitle: bookTitle || '나의 러닝일지',
-          recordYear,
-          selectedPiece,
-          runRecords: runRows.filter(r => r.date && r.km),
-          awards: awards.filter(a => a.name),
-        })
-      })
-      const bookData = await bookRes.json()
-      if (!bookData.success) throw new Error(bookData.detail)
-
-      const bookUid = bookData.data.book_uid
-
-      // 2. 주문 생성
-      const orderRes = await authFetch('/api/orders/create', {
-        method: 'POST',
-        body: JSON.stringify({ bookUid, quantity: 1 })
-      })
-      const orderData = await orderRes.json()
-      if (!orderData.success) throw new Error(orderData.detail)
-
-      setShowPriceModal(false)
-      onClose()
-      navigate('/order-complete', {
-        state: { priceInfo, bookTitle: bookTitle || '나의 러닝일지' }
-      })
-    } catch (e) {
-      alert(`오류 발생: ${e.message}`)
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  const addRunRow = () => setRunRows(p => [...p, { date: '', km: '', pace: '', memo: '' }])
-  const removeRunRow = (i) => runRows.length > 1 && setRunRows(p => p.filter((_, idx) => idx !== i))
-  const updateRunRow = (i, k, v) => setRunRows(p => p.map((r, idx) => idx === i ? { ...r, [k]: v } : r))
-  const addAward = () => setAwards(p => [...p, { name: '', result: '' }])
-  const removeAward = (i) => awards.length > 1 && setAwards(p => p.filter((_, idx) => idx !== i))
-  const updateAward = (i, k, v) => setAwards(p => p.map((a, idx) => idx === i ? { ...a, [k]: v } : a))
-  const handlePhotos = (e) => setPhotos(Array.from(e.target.files).slice(0, 6).map(f => ({ file: f, url: URL.createObjectURL(f) })))
-  const handleCustomPiece = (e) => {
-    const file = e.target.files[0]
-    if (file) { setCustomPieceUrl(URL.createObjectURL(file)); setSelectedPiece('custom') }
-  }
-
-  const monthCount = getMonthCount()
-  const previewPrice = BASE_PRICE + monthCount * PRICE_PER_MONTH
+  const addRow = () => setRunRows(p => [...p, { date:'', km:'', pace:'', memo:'' }])
+  const removeRow = (i) => runRows.length > 1 && setRunRows(p => p.filter((_,idx)=>idx!==i))
+  const updateRow = (i,k,v) => setRunRows(p => p.map((r,idx)=>idx===i?{...r,[k]:v}:r))
+  const addAward = () => setAwards(p => [...p, { name:'', result:'' }])
+  const removeAward = (i) => awards.length > 1 && setAwards(p => p.filter((_,idx)=>idx!==i))
+  const updateAward = (i,k,v) => setAwards(p => p.map((a,idx)=>idx===i?{...a,[k]:v}:a))
 
   return (
     <>
-      <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-        <div className="modal">
-          <button className="modal-close" onClick={onClose}>✕</button>
-          <h2>주문서 작성</h2>
-          <p className="modal-sub">배송지는 회원가입 시 등록한 주소로 자동 설정됩니다.</p>
+      <h2>주문서 작성</h2>
+      <p className="modal-sub">배송지는 마이페이지에서 등록한 주소로 자동 설정됩니다.</p>
 
-          {/* 에러 목록 */}
-          {errors.length > 0 && (
-            <div className="form-errors">
-              {errors.map((e, i) => <div key={i}>• {e}</div>)}
-            </div>
-          )}
+      {errors.length > 0 && <div className="form-errors">{errors.map((e,i)=><div key={i}>• {e}</div>)}</div>}
 
-          {/* 기본 정보 */}
-          <div className="form-section-title">기본 정보</div>
-          <div className="form-group" style={{ marginBottom: 12 }}>
-            <label className="form-label">책 제목 <span className="required">*</span></label>
-            <input className="form-input" placeholder="나의 러닝일지 2024" value={bookTitle} onChange={e => setBookTitle(e.target.value)} />
-          </div>
-          <div className="form-group" style={{ marginBottom: 12 }}>
-            <label className="form-label">기록 년도 <span className="required">*</span></label>
-            <select className="form-input" value={recordYear} onChange={e => setRecordYear(Number(e.target.value))}>
-              {YEARS.map(y => <option key={y} value={y}>{y}년</option>)}
-            </select>
-          </div>
+      <div className="form-section-title">기본 정보</div>
+      <div className="form-group" style={{marginBottom:12}}>
+        <label className="form-label">책 제목 <span className="required">*</span></label>
+        <input className="form-input" placeholder="나의 러닝일지 2024" value={bookTitle} onChange={e=>setBookTitle(e.target.value)}/>
+      </div>
+      <div className="form-group" style={{marginBottom:12}}>
+        <label className="form-label">기록 년도 <span className="required">*</span></label>
+        <select className="form-input" value={recordYear} onChange={e=>setRecordYear(Number(e.target.value))}>
+          {YEARS.map(y=><option key={y} value={y}>{y}년</option>)}
+        </select>
+      </div>
 
-          {/* 배송지 안내 */}
-          <div className="shipping-info-box">
-            <div className="shipping-info-label">배송지</div>
-            {user?.address ? (
-              <div className="shipping-info-addr">
-                {user.postal_code && `[${user.postal_code}] `}{user.address} {user.address_detail}
-              </div>
-            ) : (
-              <div className="shipping-info-warn">
-                배송지가 등록되지 않았습니다. <a href="/mypage" target="_blank">마이페이지</a>에서 등록해주세요.
-              </div>
-            )}
-          </div>
+      <div className="shipping-info-box">
+        <div className="shipping-info-label">배송지</div>
+        {user?.address
+          ? <div className="shipping-info-addr">{user.postal_code && `[${user.postal_code}] `}{user.address} {user.address_detail}</div>
+          : <div className="shipping-info-warn">배송지 미등록 — <a href="/mypage" target="_blank">마이페이지</a>에서 등록해주세요</div>
+        }
+      </div>
 
-          {/* 러닝 기록 */}
-          <div className="form-section-title">
-            날짜별 러닝 기록 <span className="required">*</span>
-            <span className="month-count-badge">{monthCount}개월 기록 → {previewPrice.toLocaleString()}원</span>
-          </div>
-          <div className="run-table-wrap">
-            <table className="run-table">
-              <thead>
-                <tr><th>날짜</th><th>거리 (km)</th><th>페이스 (분/km)</th><th>메모</th><th></th></tr>
-              </thead>
-              <tbody>
-                {runRows.map((row, i) => (
-                  <tr key={i}>
-                    <td><input className="td-input" type="date"
-                      min={`${recordYear}-01-01`} max={`${recordYear}-12-31`}
-                      value={row.date} onChange={e => handleDateChange(i, e.target.value)} /></td>
-                    <td><input className="td-input" type="number" placeholder="5.2" min="0" step="0.1" value={row.km} onChange={e => updateRunRow(i, 'km', e.target.value)} /></td>
-                    <td><input className="td-input" type="text" placeholder="5'30&quot;" value={row.pace} onChange={e => updateRunRow(i, 'pace', e.target.value)} /></td>
-                    <td><input className="td-input" type="text" placeholder="메모" value={row.memo} onChange={e => updateRunRow(i, 'memo', e.target.value)} /></td>
-                    <td><button className="remove-btn" onClick={() => removeRunRow(i)}>×</button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <button className="add-row-btn" onClick={addRunRow}>+ 날짜 추가</button>
-
-          {/* 말 선택 */}
-          <div className="form-section-title">보드판 말 선택 <span className="required">*</span></div>
-          <div className="piece-selector">
-            {PIECE_COLORS.map(p => (
-              <div key={p.id} className={`piece-option${selectedPiece === p.id ? ' selected' : ''}`} onClick={() => setSelectedPiece(p.id)}>
-                <div className="piece-visual" style={{ background: `${p.fill}22`, border: `2px solid ${selectedPiece === p.id ? p.fill : 'rgba(255,255,255,0.1)'}` }}>
-                  <PieceSVG fill={p.fill} light={p.light} />
-                </div>
-                <div className="piece-name">{p.label}</div>
-              </div>
+      <div className="form-section-title">날짜별 러닝 기록 <span className="required">*</span></div>
+      <div className="run-table-wrap">
+        <table className="run-table">
+          <thead><tr><th>날짜</th><th>거리(km)</th><th>페이스</th><th>메모</th><th></th></tr></thead>
+          <tbody>
+            {runRows.map((row,i)=>(
+              <tr key={i}>
+                <td><input className="td-input" type="date" min={`${recordYear}-01-01`} max={`${recordYear}-12-31`} value={row.date} onChange={e=>handleDateChange(i,e.target.value)}/></td>
+                <td><input className="td-input" type="number" placeholder="5.2" step="0.1" value={row.km} onChange={e=>updateRow(i,'km',e.target.value)}/></td>
+                <td><input className="td-input" type="text" placeholder="5'30&quot;" value={row.pace} onChange={e=>updateRow(i,'pace',e.target.value)}/></td>
+                <td><input className="td-input" type="text" placeholder="메모" value={row.memo} onChange={e=>updateRow(i,'memo',e.target.value)}/></td>
+                <td><button className="remove-btn" onClick={()=>removeRow(i)}>×</button></td>
+              </tr>
             ))}
-            <div>
-              <div className={`piece-upload${selectedPiece === 'custom' ? ' selected' : ''}`}
-                onClick={() => document.getElementById('customPieceInput').click()}
-                style={customPieceUrl ? { backgroundImage: `url(${customPieceUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}>
-                {!customPieceUrl && <><div className="upload-plus">+</div><div className="piece-upload-text">이미지<br />업로드</div></>}
-              </div>
-              <input type="file" id="customPieceInput" accept="image/*" style={{ display: 'none' }} onChange={handleCustomPiece} />
-              <div className="piece-name">커스텀</div>
+          </tbody>
+        </table>
+      </div>
+      <button className="add-row-btn" onClick={addRow}>+ 날짜 추가</button>
+
+      <div className="form-section-title">보드판 말 선택 <span className="required">*</span></div>
+      <div className="piece-selector">
+        {PIECE_COLORS.map(p=>(
+          <div key={p.id} className={`piece-option${selectedPiece===p.id?' selected':''}`} onClick={()=>setSelectedPiece(p.id)}>
+            <div className="piece-visual" style={{background:`${p.fill}22`,border:`2px solid ${selectedPiece===p.id?p.fill:'rgba(255,255,255,0.1)'}`}}>
+              <PieceSVG fill={p.fill} light={p.light}/>
             </div>
+            <div className="piece-name">{p.label}</div>
           </div>
-          <p className="piece-hint">커스텀 이미지 권장 사이즈: 50px × 100px (세로형)</p>
-
-          {/* 수상 경력 */}
-          <div className="form-section-title">마라톤 수상 경력 (선택)</div>
-          {awards.map((a, i) => (
-            <div key={i} className="award-entry">
-              <input className="form-input" placeholder="대회명" value={a.name} onChange={e => updateAward(i, 'name', e.target.value)} />
-              <input className="form-input" placeholder="결과 (예: 완주)" value={a.result} onChange={e => updateAward(i, 'result', e.target.value)} />
-              <button className="remove-btn" onClick={() => removeAward(i)}>×</button>
-            </div>
-          ))}
-          <button className="add-row-btn" onClick={addAward}>+ 수상 경력 추가</button>
-
-          {/* 사진 */}
-          <div className="form-section-title">특별한 사진 (선택 · 최대 6장)</div>
-          <div className="photo-upload-area" onClick={() => document.getElementById('photoInput').click()}>
-            <div className="upload-icon">📷</div>
-            <p>클릭하여 사진 선택 (jpg, png)</p>
+        ))}
+        <div>
+          <div className={`piece-upload${selectedPiece==='custom'?' selected':''}`}
+            onClick={()=>document.getElementById('customPieceInput').click()}
+            style={customPieceUrl?{backgroundImage:`url(${customPieceUrl})`,backgroundSize:'cover'}:{}}>
+            {!customPieceUrl&&<><div className="upload-plus">+</div><div className="piece-upload-text">이미지<br/>업로드</div></>}
           </div>
-          <input type="file" id="photoInput" accept="image/*" multiple style={{ display: 'none' }} onChange={handlePhotos} />
-          {photos.length > 0 && (
-            <div className="photo-previews">
-              {photos.map((p, i) => <img key={i} src={p.url} alt="" className="photo-thumb" />)}
-            </div>
-          )}
-
-          <button className="btn-submit" onClick={handleSubmitClick}>
-            주문 제출하기 →
-          </button>
+          <input type="file" id="customPieceInput" accept="image/*" style={{display:'none'}} onChange={e=>{const f=e.target.files[0];if(f){setCustomPieceUrl(URL.createObjectURL(f));setSelectedPiece('custom')}}}/>
+          <div className="piece-name">커스텀</div>
         </div>
       </div>
 
-      {showPriceModal && priceInfo && (
-        <PriceConfirmModal
-          priceInfo={priceInfo}
-          onConfirm={handleFinalSubmit}
-          onClose={() => setShowPriceModal(false)}
-          loading={submitting}
-        />
+      <div className="form-section-title">마라톤 수상 경력 (선택 — 부록 +3,000원)</div>
+      {awards.map((a,i)=>(
+        <div key={i} className="award-entry">
+          <input className="form-input" placeholder="대회명" value={a.name} onChange={e=>updateAward(i,'name',e.target.value)}/>
+          <input className="form-input" placeholder="결과" value={a.result} onChange={e=>updateAward(i,'result',e.target.value)}/>
+          <button className="remove-btn" onClick={()=>removeAward(i)}>×</button>
+        </div>
+      ))}
+      <button className="add-row-btn" onClick={addAward}>+ 수상 경력 추가</button>
+
+      <button className="btn-submit" onClick={handleNext}>주문 제출하기 →</button>
+    </>
+  )
+}
+
+// 단계 2: 제출서 확인
+function StepConfirm({ formData, onBack, onBuild }) {
+  const hasAppendix = formData.awards.some(a => a.name)
+  const totalPrice = BASE_PRICE + (hasAppendix ? APPENDIX_PRICE : 0)
+
+  const grouped = {}
+  formData.runRecords.forEach(r => {
+    const m = r.date.slice(0, 7)
+    if (!grouped[m]) grouped[m] = []
+    grouped[m].push(r)
+  })
+
+  return (
+    <>
+      <h2>제출서 확인</h2>
+      <p className="modal-sub">입력하신 내용을 확인해주세요.</p>
+
+      <div className="confirm-section">
+        <div className="confirm-label">기본 정보</div>
+        <div className="confirm-row"><span>책 제목</span><strong>{formData.bookTitle}</strong></div>
+        <div className="confirm-row"><span>기록 년도</span><strong>{formData.recordYear}년</strong></div>
+        <div className="confirm-row"><span>보드판 말</span><strong>{formData.selectedPiece}</strong></div>
+      </div>
+
+      <div className="confirm-section">
+        <div className="confirm-label">러닝 기록 ({formData.runRecords.length}건)</div>
+        <div className="confirm-records">
+          {Object.entries(grouped).sort().map(([ym, records]) => (
+            <div key={ym}>
+              <div className="confirm-month">{ym.replace('-','년 ')}월</div>
+              {records.map((r,i) => (
+                <div key={i} className="confirm-record-row">
+                  <span className="rec-date">{r.date.slice(5).replace('-','/')}</span>
+                  <span className="rec-km">{r.km}km</span>
+                  <span className="rec-pace">{r.pace}</span>
+                  {r.memo && <span className="rec-memo">{r.memo}</span>}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {formData.awards.some(a=>a.name) && (
+        <div className="confirm-section">
+          <div className="confirm-label">부록 — 수상 경력</div>
+          {formData.awards.filter(a=>a.name).map((a,i)=>(
+            <div key={i} className="confirm-row"><span>{a.name}</span><strong>{a.result}</strong></div>
+          ))}
+        </div>
+      )}
+
+      <div className="confirm-price-box">
+        <div className="confirm-price-row"><span>기본 가격</span><strong>{BASE_PRICE.toLocaleString()}원</strong></div>
+        <div className="confirm-price-row"><span>부록</span><strong>{hasAppendix ? `+${APPENDIX_PRICE.toLocaleString()}원` : '미포함'}</strong></div>
+        <div className="confirm-price-row total"><span>예상 결제 금액</span><strong>{totalPrice.toLocaleString()}원</strong></div>
+      </div>
+
+      <div className="confirm-btns">
+        <button className="btn-back" onClick={onBack}>다시 확인</button>
+        <button className="btn-build" onClick={()=>onBuild(formData)}>책 생성하기 →</button>
+      </div>
+    </>
+  )
+}
+
+// 단계 3: 로딩
+function StepLoading({ formData, onDone }) {
+  const { authFetch } = useAuth()
+  const [step, setStep] = useState('준비 중...')
+  const [pct, setPct] = useState(0)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    let isMounted = true
+    const token = localStorage.getItem('rb_token')
+
+    fetch('/api/books/create-stream', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(formData)
+    }).then(async res => {
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let buf = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buf += decoder.decode(value, { stream: true })
+        const lines = buf.split('\n')
+        buf = lines.pop()
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue
+          try {
+            const msg = JSON.parse(line.slice(6))
+            if (!isMounted) return
+
+            if (msg.error) { setError(msg.error); return }
+            if (msg.step) { setStep(msg.step); setPct(msg.pct) }
+            if (msg.done) {
+              onDone({
+                result: msg.result,
+                price_info: msg.price_info,
+                formData,
+              })
+            }
+          } catch {}
+        }
+      }
+    }).catch(e => { if (isMounted) setError(e.message) })
+
+    return () => { isMounted = false }
+  }, [])
+
+  return (
+    <>
+      <h2>책 생성 중...</h2>
+      <p className="modal-sub">잠시만 기다려주세요. 약 1~2분 소요됩니다.</p>
+
+      <div className="loading-step">{step}</div>
+      <div className="loading-bar-wrap">
+        <div className="loading-bar-track">
+          <div className="loading-bar-fill" style={{width:`${pct}%`}}/>
+        </div>
+        <div className="loading-pct">{pct}%</div>
+      </div>
+
+      {error && (
+        <div className="form-errors" style={{marginTop:24}}>
+          오류 발생: {error}
+        </div>
       )}
     </>
+  )
+}
+
+// 단계 4: 완료 + 가격 확인
+// 단계 4: 완료 + 가격 확인
+function StepComplete({ data, onCancel, onOrder }) {
+  const { result, price_info, formData } = data
+  const [ordering, setOrdering] = useState(false)
+  const [enlarged, setEnlarged] = useState(false)
+
+  const handleOrder = async () => {
+    setOrdering(true)
+    await onOrder()
+    setOrdering(false)
+  }
+
+  return (
+    <>
+      <h2>책 생성 완료!</h2>
+      <p className="modal-sub">아래 내용을 확인 후 최종 주문해주세요.</p>
+
+      <div className="confirm-price-box" style={{marginBottom:20}}>
+        <div className="confirm-price-row"><span>기본 가격</span><strong>{price_info.base_price.toLocaleString()}원</strong></div>
+        <div className="confirm-price-row">
+          <span>부록</span>
+          <strong>{price_info.has_appendix ? `+${price_info.appendix_price.toLocaleString()}원` : '미포함'}</strong>
+        </div>
+        <div className="confirm-price-row total">
+          <span>최종 결제 금액</span>
+          <strong>{price_info.total_price.toLocaleString()}원</strong>
+        </div>
+      </div>
+
+      {result?.preview_b64 && (
+        <div className="preview-image-wrap">
+          <div className="preview-image-header">
+            <div className="preview-image-label">보드판 미리보기</div>
+            <div className="preview-image-notice">⚠ 예시 이미지로 실제와 다를 수 있습니다</div>
+          </div>
+          <div className="preview-image-container" onClick={() => setEnlarged(true)}>
+            <img src={result.preview_b64} alt="보드판 미리보기" className="preview-image"/>
+            <div className="preview-zoom-hint">🔍 클릭하여 확대</div>
+          </div>
+        </div>
+      )}
+
+      {/* 확대 오버레이 */}
+      {enlarged && (
+        <div className="preview-enlarged-overlay" onClick={() => setEnlarged(false)}>
+          <div className="preview-enlarged-inner" onClick={e => e.stopPropagation()}>
+            <button className="preview-enlarged-close" onClick={() => setEnlarged(false)}>✕</button>
+            <div className="preview-enlarged-notice">⚠ 예시 이미지로 실제와 다를 수 있습니다</div>
+            <img src={result.preview_b64} alt="보드판 미리보기 확대"/>
+          </div>
+        </div>
+      )}
+
+      <p style={{fontSize:11,color:'rgba(255,255,255,0.2)',margin:'12px 0',textAlign:'center'}}>
+        * Sandbox 환경으로 실제 결제는 이루어지지 않습니다
+      </p>
+
+      <div className="confirm-btns">
+        <button className="btn-back" onClick={onCancel}>취소하기</button>
+        <button className="btn-build" onClick={handleOrder} disabled={ordering}>
+          {ordering ? '주문 처리 중...' : '주문하기 →'}
+        </button>
+      </div>
+    </>
+  )
+}
+
+// 메인 모달
+export default function OrderModal({ isOpen, onClose }) {
+  const { user, authFetch } = useAuth()
+  const navigate = useNavigate()
+  const [step, setStep] = useState('form') // form | confirm | loading | complete
+  const [formData, setFormData] = useState(null)
+  const [completeData, setCompleteData] = useState(null)
+
+  if (!isOpen) return null
+
+  const handleClose = () => {
+    setStep('form')
+    setFormData(null)
+    setCompleteData(null)
+    onClose()
+  }
+
+  const handleOrder = async () => {
+    try {
+      const res = await authFetch('/api/books/confirm-order', {
+        method: 'POST',
+        body: JSON.stringify({
+          bookUid:     completeData.result.book_uid,
+          bookTitle:   completeData.formData.bookTitle,
+          recordYear:  completeData.formData.recordYear,
+          totalPrice:  completeData.price_info.total_price,
+          hasAppendix: completeData.price_info.has_appendix,
+        })
+      })
+      const data = await res.json()
+      if (!data.success) throw new Error(data.detail)
+      handleClose()
+      navigate('/order-complete', {
+        state: {
+          priceInfo:  completeData.price_info,
+          bookTitle:  completeData.formData.bookTitle,
+        }
+      })
+    } catch (e) {
+      alert('주문 중 오류: ' + e.message)
+    }
+  }
+
+  return (
+    <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&handleClose()}>
+      <div className="modal">
+        {step !== 'loading' && <button className="modal-close" onClick={handleClose}>✕</button>}
+
+        {step === 'form' && (
+          <StepForm
+            user={user}
+            onNext={data => { setFormData(data); setStep('confirm') }}
+          />
+        )}
+        {step === 'confirm' && (
+          <StepConfirm
+            formData={formData}
+            onBack={() => setStep('form')}
+            onBuild={() => setStep('loading')}
+          />
+        )}
+        {step === 'loading' && (
+          <StepLoading
+            formData={formData}
+            onDone={data => { setCompleteData(data); setStep('complete') }}
+          />
+        )}
+        {step === 'complete' && (
+          <StepComplete
+            data={completeData}
+            onCancel={handleClose}
+            onOrder={handleOrder}
+          />
+        )}
+      </div>
+    </div>
   )
 }

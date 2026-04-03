@@ -22,7 +22,7 @@ export function AuthProvider({ children }) {
         .catch(() => localStorage.removeItem(TOKEN_KEY))
         .finally(() => setLoading(false))
     } else {
-      setLoading(false)
+      setTimeout(() => {setLoading(false)},0)
     }
   }, [])
 
