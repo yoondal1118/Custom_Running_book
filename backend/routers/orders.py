@@ -15,12 +15,42 @@ client = Client(api_key=os.getenv("BOOKPRINT_API_KEY"), environment="sandbox")
 
 router = APIRouter()
 
+class EstimateRequest(BaseModel):
+    bookUid: str
+    quantity: Optional[int] = 1
+
 class CreateOrderRequest(BaseModel):
     bookUid: str
     quantity: Optional[int] = 1
 
 class CancelRequest(BaseModel):
     cancelReason: str
+
+@router.post("/estimate")
+async def estimate_order(
+    req: EstimateRequest,
+    current_user: models.User = Depends(get_current_user),
+):
+    """주문 전 Sweetbook API로 실제 예상 금액 조회"""
+    try:
+        result = client.orders.estimate([
+            {"bookUid": req.bookUid, "quantity": req.quantity}
+        ])
+        data = result["data"]
+        return {
+            "success": True,
+            "data": {
+                "productAmount":   data.get("productAmount", 0),
+                "shippingFee":     data.get("shippingFee", 0),
+                "packagingFee":    data.get("packagingFee", 0),
+                "totalAmount":     data.get("totalAmount", 0),
+                "creditBalance":   data.get("creditBalance", 0),
+                "creditSufficient": data.get("creditSufficient", True),
+                "currency":        data.get("currency", "KRW"),
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/create")
 async def create_order(
@@ -41,7 +71,6 @@ async def create_order(
         )
         order_uid = result["data"]["orderUid"]
 
-        # DB 주문에 order_uid 업데이트
         db_order = db.query(models.Order).filter(
             models.Order.book_uid == req.bookUid,
             models.Order.user_id == current_user.id
@@ -98,12 +127,11 @@ def cancel_order(
     if order.status == "cancelled":
         raise HTTPException(status_code=400, detail="이미 취소된 주문입니다")
 
-    # Sweetbook API 취소 시도
     if order.order_uid:
         try:
             client.orders.cancel(order.order_uid, req.cancelReason)
         except Exception:
-            pass  # Sandbox에서 이미 처리된 경우 무시
+            pass
 
     order.status = "cancelled"
     order.cancel_reason = req.cancelReason

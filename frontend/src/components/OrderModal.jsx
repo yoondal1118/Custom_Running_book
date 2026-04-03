@@ -297,11 +297,37 @@ function StepLoading({ formData, onDone }) {
 }
 
 // 단계 4: 완료 + 가격 확인
-// 단계 4: 완료 + 가격 확인
 function StepComplete({ data, onCancel, onOrder }) {
   const { result, price_info, formData } = data
+  const { authFetch } = useAuth()
   const [ordering, setOrdering] = useState(false)
   const [enlarged, setEnlarged] = useState(false)
+  const [estimate, setEstimate] = useState(null)
+  const [estimateLoading, setEstimateLoading] = useState(true)
+  const [estimateError, setEstimateError] = useState(null)
+
+  // 컴포넌트 마운트 시 Sweetbook estimate API 호출
+  useEffect(() => {
+    const fetchEstimate = async () => {
+      try {
+        const res = await authFetch('/api/orders/estimate', {
+          method: 'POST',
+          body: JSON.stringify({
+            bookUid: result.book_uid,
+            quantity: 1,
+          })
+        })
+        const json = await res.json()
+        if (json.success) setEstimate(json.data)
+        else setEstimateError('금액 조회 실패')
+      } catch (e) {
+        setEstimateError(e.message)
+      } finally {
+        setEstimateLoading(false)
+      }
+    }
+    fetchEstimate()
+  }, [])
 
   const handleOrder = async () => {
     setOrdering(true)
@@ -314,18 +340,41 @@ function StepComplete({ data, onCancel, onOrder }) {
       <h2>책 생성 완료!</h2>
       <p className="modal-sub">아래 내용을 확인 후 최종 주문해주세요.</p>
 
+      {/* Sweetbook 실제 견적 */}
       <div className="confirm-price-box" style={{marginBottom:20}}>
-        <div className="confirm-price-row"><span>기본 가격</span><strong>{price_info.base_price.toLocaleString()}원</strong></div>
-        <div className="confirm-price-row">
-          <span>부록</span>
-          <strong>{price_info.has_appendix ? `+${price_info.appendix_price.toLocaleString()}원` : '미포함'}</strong>
-        </div>
-        <div className="confirm-price-row total">
-          <span>최종 결제 금액</span>
-          <strong>{price_info.total_price.toLocaleString()}원</strong>
-        </div>
+        <div className="estimate-source">Sweetbook API 실제 견적</div>
+        {estimateLoading ? (
+          <div className="estimate-loading">금액 조회 중...</div>
+        ) : estimateError ? (
+          <>
+            <div className="confirm-price-row"><span>기본 가격</span><strong>{price_info.base_price.toLocaleString()}원</strong></div>
+            <div className="confirm-price-row">
+              <span>부록</span>
+              <strong>{price_info.has_appendix ? `+${price_info.appendix_price.toLocaleString()}원` : '미포함'}</strong>
+            </div>
+            <div className="confirm-price-row total">
+              <span>예상 결제 금액</span>
+              <strong>{price_info.total_price.toLocaleString()}원</strong>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="confirm-price-row"><span>상품 금액</span><strong>{estimate.productAmount.toLocaleString()}원</strong></div>
+            <div className="confirm-price-row"><span>배송비</span><strong>{estimate.shippingFee.toLocaleString()}원</strong></div>
+            <div className="confirm-price-row"><span>포장비</span><strong>{estimate.packagingFee.toLocaleString()}원</strong></div>
+            <div className="confirm-price-row total">
+              <span>최종 결제 금액</span>
+              <strong>{estimate.totalAmount.toLocaleString()}원</strong>
+            </div>
+            <div className={`estimate-credit ${estimate.creditSufficient ? 'ok' : 'warn'}`}>
+              충전금 잔액 {estimate.creditBalance.toLocaleString()}원
+              {estimate.creditSufficient ? ' ✓ 결제 가능' : ' ✗ 충전금 부족'}
+            </div>
+          </>
+        )}
       </div>
 
+      {/* 미리보기 이미지 */}
       {result?.preview_b64 && (
         <div className="preview-image-wrap">
           <div className="preview-image-header">
@@ -356,7 +405,11 @@ function StepComplete({ data, onCancel, onOrder }) {
 
       <div className="confirm-btns">
         <button className="btn-back" onClick={onCancel}>취소하기</button>
-        <button className="btn-build" onClick={handleOrder} disabled={ordering}>
+        <button
+          className="btn-build"
+          onClick={handleOrder}
+          disabled={ordering || (!estimate?.creditSufficient && !estimateLoading)}
+        >
           {ordering ? '주문 처리 중...' : '주문하기 →'}
         </button>
       </div>

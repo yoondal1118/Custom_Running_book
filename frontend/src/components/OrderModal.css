@@ -354,3 +354,37 @@
   color: rgba(255,200,100,0.7);
   margin-bottom: 10px;
 }
+.estimate-source {
+  font-size: 10px;
+  color: rgba(255,255,255,0.25);
+  letter-spacing: 1.5px;
+  font-family: 'Oswald', sans-serif;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.estimate-loading {
+  font-size: 13px;
+  color: rgba(255,255,255,0.3);
+  text-align: center;
+  padding: 12px 0;
+  font-weight: 300;
+}
+.estimate-credit {
+  font-size: 12px;
+  margin-top: 10px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-weight: 300;
+}
+.estimate-credit.ok {
+  background: rgba(45,106,63,0.15);
+  border: 1px solid rgba(45,106,63,0.3);
+  color: #97C459;
+}
+.estimate-credit.warn {
+  background: rgba(226,75,74,0.12);
+  border: 1px solid rgba(226,75,74,0.3);
+  color: #F09595;
+}
