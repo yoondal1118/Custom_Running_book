@@ -7,10 +7,24 @@ export default function MyPage() {
   const { user, authFetch, logout, setUser } = useAuth()
   const navigate = useNavigate()
   const [tab, setTab] = useState('orders')
+
+  // 주문 내역
   const [orders, setOrders] = useState([])
   const [ordersLoading, setOrdersLoading] = useState(true)
+
+  // 주문 취소 모달
   const [cancelModal, setCancelModal] = useState(null)
   const [cancelReason, setCancelReason] = useState('')
+
+  // 배송지 변경 모달
+  const [shippingModal, setShippingModal] = useState(null)
+  const [shippingForm, setShippingForm] = useState({
+    recipientName: '', recipientPhone: '', postalCode: '',
+    address1: '', address2: '', shippingMemo: ''
+  })
+  const [shippingMsg, setShippingMsg] = useState('')
+
+  // 내 정보 변경
   const [infoForm, setInfoForm] = useState({
     email: '', password: '', password_confirm: '',
     address: '', address_detail: '', postal_code: '', phone: ''
@@ -44,6 +58,7 @@ export default function MyPage() {
     fetchOrders()
   }, [user])
 
+  // 주문 취소
   const handleCancelSubmit = async () => {
     if (!cancelReason.trim()) { alert('취소 사유를 입력해주세요'); return }
     try {
@@ -61,6 +76,37 @@ export default function MyPage() {
     }
   }
 
+  // 배송지 변경 모달 열기
+  const handleShippingOpen = (o) => {
+    setShippingForm({
+      recipientName:  user?.name || '',
+      recipientPhone: user?.phone || '',
+      postalCode:     user?.postal_code || '',
+      address1:       user?.address || '',
+      address2:       user?.address_detail || '',
+      shippingMemo:   ''
+    })
+    setShippingMsg('')
+    setShippingModal(o.id)
+  }
+
+  // 배송지 변경 제출
+  const handleShippingSubmit = async () => {
+    try {
+      const res = await authFetch(`/api/orders/${shippingModal}/shipping`, {
+        method: 'PATCH',
+        body: JSON.stringify(shippingForm)
+      })
+      const data = await res.json()
+      if (!data.success) throw new Error(data.detail)
+      setShippingMsg('배송지가 변경되었습니다')
+      setTimeout(() => setShippingModal(null), 1200)
+    } catch (e) {
+      setShippingMsg(`오류: ${e.message}`)
+    }
+  }
+
+  // 내 정보 저장
   const handleInfoSave = async () => {
     setInfoMsg('')
     setInfoError('')
@@ -80,18 +126,13 @@ export default function MyPage() {
         body.password = infoForm.password
         body.password_confirm = infoForm.password_confirm
       }
-
       const res = await authFetch('/api/auth/me', {
         method: 'PATCH',
         body: JSON.stringify(body)
       })
-
-      // 401이어도 로그인으로 보내지 않고 에러 표시 — 원인 파악 우선
       const data = await res.json()
-      console.log('PATCH /api/auth/me 응답:', res.status, data)
-
       if (!data.success) {
-        setInfoError(`저장 실패 (${res.status}): ${data.detail || JSON.stringify(data)}`)
+        setInfoError(`저장 실패: ${data.detail || JSON.stringify(data)}`)
         return
       }
       setUser(data.data)
@@ -106,6 +147,15 @@ export default function MyPage() {
 
   if (!user) return null
 
+  const SHIPPING_FIELDS = [
+    { label: '수령인',    key: 'recipientName',  placeholder: '홍길동' },
+    { label: '연락처',    key: 'recipientPhone', placeholder: '010-0000-0000' },
+    { label: '우편번호',  key: 'postalCode',     placeholder: '00000' },
+    { label: '주소',      key: 'address1',       placeholder: '도로명 주소' },
+    { label: '상세주소',  key: 'address2',       placeholder: '동/호수' },
+    { label: '배송 메모', key: 'shippingMemo',   placeholder: '부재시 경비실' },
+  ]
+
   return (
     <div className="mypage">
       <div className="mypage-sidebar">
@@ -119,6 +169,8 @@ export default function MyPage() {
       </div>
 
       <div className="mypage-content">
+
+        {/* 주문 내역 */}
         {tab === 'orders' && (
           <div>
             <h2>주문 내역</h2>
@@ -137,16 +189,20 @@ export default function MyPage() {
                     <div className="order-card-info">
                       <div><span>주문번호</span>{o.book_uid}</div>
                       <div><span>기록 연도</span>{o.record_year}년</div>
-                      <div><span>기록 월수</span>{o.month_count}개월</div>
                       <div><span>결제 금액</span>{o.total_price?.toLocaleString()}원</div>
                       <div><span>주문일</span>{o.ordered_at}</div>
                       <div><span>예상 배송일</span>{o.estimated_delivery}</div>
                       {o.cancel_reason && <div><span>취소 사유</span>{o.cancel_reason}</div>}
                     </div>
                     {o.status !== 'cancelled' && (
-                      <button className="cancel-btn" onClick={() => { setCancelModal(o.id); setCancelReason('') }}>
-                        주문 취소
-                      </button>
+                      <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                        <button className="shipping-btn" onClick={() => handleShippingOpen(o)}>
+                          배송지 변경
+                        </button>
+                        <button className="cancel-btn" onClick={() => { setCancelModal(o.id); setCancelReason('') }}>
+                          주문 취소
+                        </button>
+                      </div>
                     )}
                   </div>
                 ))}
@@ -155,50 +211,110 @@ export default function MyPage() {
           </div>
         )}
 
+        {/* 내 정보 변경 */}
         {tab === 'info' && (
           <div>
             <h2>내 정보 변경</h2>
             {infoMsg && <div className="info-success">{infoMsg}</div>}
             {infoError && <div className="info-error">{infoError}</div>}
+
             <div className="info-section">계정 정보</div>
-            <div className="info-field"><label>이메일</label>
+            <div className="info-field">
+              <label>이메일</label>
               <input value={infoForm.email} onChange={e => setInfoForm(p => ({ ...p, email: e.target.value }))} />
             </div>
             <div className="info-row">
-              <div className="info-field"><label>새 비밀번호</label>
-                <input type="password" placeholder="변경 시에만 입력" value={infoForm.password} onChange={e => setInfoForm(p => ({ ...p, password: e.target.value }))} />
+              <div className="info-field">
+                <label>새 비밀번호</label>
+                <input type="password" placeholder="변경 시에만 입력"
+                  value={infoForm.password} onChange={e => setInfoForm(p => ({ ...p, password: e.target.value }))} />
               </div>
-              <div className="info-field"><label>비밀번호 확인</label>
-                <input type="password" value={infoForm.password_confirm} onChange={e => setInfoForm(p => ({ ...p, password_confirm: e.target.value }))} />
+              <div className="info-field">
+                <label>비밀번호 확인</label>
+                <input type="password"
+                  value={infoForm.password_confirm} onChange={e => setInfoForm(p => ({ ...p, password_confirm: e.target.value }))} />
               </div>
             </div>
-            <div className="info-field"><label>연락처</label>
+            <div className="info-field">
+              <label>연락처</label>
               <input value={infoForm.phone} onChange={e => setInfoForm(p => ({ ...p, phone: e.target.value }))} />
             </div>
+
             <div className="info-section">배송지</div>
-            <div className="info-field"><label>우편번호</label>
+            <div className="info-field">
+              <label>우편번호</label>
               <input value={infoForm.postal_code} onChange={e => setInfoForm(p => ({ ...p, postal_code: e.target.value }))} />
             </div>
-            <div className="info-field"><label>주소</label>
+            <div className="info-field">
+              <label>주소</label>
               <input value={infoForm.address} onChange={e => setInfoForm(p => ({ ...p, address: e.target.value }))} />
             </div>
-            <div className="info-field"><label>상세주소</label>
+            <div className="info-field">
+              <label>상세주소</label>
               <input value={infoForm.address_detail} onChange={e => setInfoForm(p => ({ ...p, address_detail: e.target.value }))} />
             </div>
+
             <button className="info-save-btn" onClick={handleInfoSave}>저장하기</button>
           </div>
         )}
       </div>
 
+      {/* 주문 취소 모달 */}
       {cancelModal && (
         <div className="cancel-overlay" onClick={e => e.target === e.currentTarget && setCancelModal(null)}>
           <div className="cancel-modal">
             <h3>주문 취소</h3>
             <p>취소 사유를 입력해주세요</p>
-            <textarea value={cancelReason} onChange={e => setCancelReason(e.target.value)} placeholder="취소 사유 입력..." rows={4} />
+            <textarea
+              value={cancelReason}
+              onChange={e => setCancelReason(e.target.value)}
+              placeholder="취소 사유 입력..."
+              rows={4}
+            />
             <div className="cancel-modal-btns">
               <button className="cancel-modal-back" onClick={() => setCancelModal(null)}>돌아가기</button>
               <button className="cancel-modal-confirm" onClick={handleCancelSubmit}>취소 확인</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 배송지 변경 모달 */}
+      {shippingModal && (
+        <div className="cancel-overlay" onClick={e => e.target === e.currentTarget && setShippingModal(null)}>
+          <div className="cancel-modal">
+            <h3>배송지 변경</h3>
+            <p>PAID 상태일 때만 변경 가능합니다</p>
+            {SHIPPING_FIELDS.map(f => (
+              <div key={f.key} className="info-field" style={{ marginBottom: 10 }}>
+                <label>{f.label}</label>
+                <input
+                  value={shippingForm[f.key]}
+                  placeholder={f.placeholder}
+                  onChange={e => setShippingForm(p => ({ ...p, [f.key]: e.target.value }))}
+                  style={{
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    color: '#fff', padding: '9px 12px',
+                    fontFamily: 'Noto Sans KR', fontSize: 13,
+                    outline: 'none', width: '100%'
+                  }}
+                />
+              </div>
+            ))}
+            {shippingMsg && (
+              <div className={shippingMsg.startsWith('오류') ? 'info-error' : 'info-success'}
+                style={{ marginBottom: 12 }}>
+                {shippingMsg}
+              </div>
+            )}
+            <div className="cancel-modal-btns">
+              <button className="cancel-modal-back" onClick={() => setShippingModal(null)}>닫기</button>
+              <button className="cancel-modal-confirm"
+                style={{ background: 'var(--orange)' }}
+                onClick={handleShippingSubmit}>
+                변경 완료
+              </button>
             </div>
           </div>
         </div>

@@ -167,3 +167,15 @@
   .order-card-info { grid-template-columns: 1fr; }
   .info-row { grid-template-columns: 1fr; }
 }
+.shipping-btn {
+  background: transparent;
+  border: 1px solid rgba(232,99,42,0.3);
+  color: var(--orange);
+  font-size: 12px; padding: 7px 14px;
+  cursor: pointer; transition: all 0.2s;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+.shipping-btn:hover {
+  background: rgba(232,99,42,0.1);
+  border-color: var(--orange);
+}
