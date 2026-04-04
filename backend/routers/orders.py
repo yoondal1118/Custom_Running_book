@@ -138,3 +138,50 @@ def cancel_order(
     db.commit()
 
     return {"success": True, "message": "주문이 취소되었습니다"}
+
+class UpdateShippingRequest(BaseModel):
+    recipientName: Optional[str] = None
+    recipientPhone: Optional[str] = None
+    postalCode: Optional[str] = None
+    address1: Optional[str] = None
+    address2: Optional[str] = None
+    shippingMemo: Optional[str] = None
+
+@router.patch("/{order_id}/shipping")
+def update_shipping(
+    order_id: int,
+    req: UpdateShippingRequest,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    order = db.query(models.Order).filter(
+        models.Order.id == order_id,
+        models.Order.user_id == current_user.id
+    ).first()
+
+    if not order:
+        raise HTTPException(status_code=404, detail="주문을 찾을 수 없습니다")
+    if order.status == "cancelled":
+        raise HTTPException(status_code=400, detail="취소된 주문은 배송지를 변경할 수 없습니다")
+    if not order.order_uid:
+        raise HTTPException(status_code=400, detail="주문 번호가 없습니다")
+
+    # 변경할 필드만 추출
+    payload = {k: v for k, v in req.dict().items() if v is not None}
+    if not payload:
+        raise HTTPException(status_code=400, detail="변경할 항목을 입력해주세요")
+
+    try:
+        client.orders.update_shipping(order.order_uid, **{
+            k: v for k, v in {
+                "recipient_name":  req.recipientName,
+                "recipient_phone": req.recipientPhone,
+                "postal_code":     req.postalCode,
+                "address1":        req.address1,
+                "address2":        req.address2,
+                "shipping_memo":   req.shippingMemo,
+            }.items() if v is not None
+        })
+        return {"success": True, "message": "배송지가 변경되었습니다"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
