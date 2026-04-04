@@ -72,10 +72,38 @@ function StepForm({ onNext, user }) {
   const addAward = () => setAwards(p => [...p, { name:'', result:'' }])
   const removeAward = (i) => awards.length > 1 && setAwards(p => p.filter((_,idx)=>idx!==i))
   const updateAward = (i,k,v) => setAwards(p => p.map((a,idx)=>idx===i?{...a,[k]:v}:a))
-
+  const fillDummyData = () => {
+    setBookTitle('나의 러닝일지')
+    setRecordYear(2024)
+    setSelectedPiece('blue')
+    setRunRows([
+      { date: '2025-01-03', km: '3.2', pace: "6'30\"", memo: '새해 첫 러닝!' },
+      { date: '2025-01-10', km: '8.5', pace: "5'45\"", memo: '컨디션 좋음' },
+      { date: '2025-01-20', km: '21.1', pace: "5'10\"", memo: '하프 마라톤 완주!!' },
+      { date: '2025-02-07', km: '9.0', pace: "5'40\"", memo: '' },
+      { date: '2025-02-25', km: '20.0', pace: "5'10\"", memo: '대회 준비 20km' },
+      { date: '2025-03-10', km: '42.195', pace: "5'05\"", memo: '풀마라톤 완주!!!' },
+      { date: '2025-04-05', km: '6.5', pace: "5'50\"", memo: '' },
+      { date: '2025-05-14', km: '11.0', pace: "5'20\"", memo: '' },
+      { date: '2025-06-22', km: '7.0', pace: "5'45\"", memo: '여름 저녁 러닝' },
+      { date: '2025-07-08', km: '5.5', pace: "6'00\"", memo: '더위에도 완주' },
+      { date: '2025-08-19', km: '4.2', pace: "6'10\"", memo: '' },
+      { date: '2025-09-15', km: '15.0', pace: "5'15\"", memo: '가을 롱런' },
+      { date: '2025-10-06', km: '42.195', pace: "4'58\"", memo: '시즌 최고 기록!' },
+      { date: '2025-11-03', km: '10.0', pace: "5'30\"", memo: '' },
+      { date: '2025-12-31', km: '5.0', pace: "6'00\"", memo: '올해 마지막 러닝' },
+    ])
+    setAwards([
+      { name: '2025 서울 하프마라톤', result: '완주 (2:10:35)' },
+      { name: '2025 춘천 마라톤', result: '완주 (4:28:12)' },
+    ])
+  }
   return (
     <>
       <h2>주문서 작성</h2>
+      <button className="dummy-fill-btn" onClick={fillDummyData}>
+        📋 테스트 데이터로 채우기
+      </button>
       <p className="modal-sub">배송지는 마이페이지에서 등록한 주소로 자동 설정됩니다.</p>
 
       {errors.length > 0 && <div className="form-errors">{errors.map((e,i)=><div key={i}>• {e}</div>)}</div>}
