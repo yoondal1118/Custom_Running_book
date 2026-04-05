@@ -1,504 +1,348 @@
-# BookPrintAPI Python SDK
+# 러닝일지북(Running Book) 서비스 가이드
 
-포토북 생성/주문을 위한 BookPrintAPI Python SDK입니다.
+## 📙 서비스 개요
 
-> **이 SDK로 할 수 있는 것**: 포토북 생성 → 표지/내지 구성 → 주문 → 배송 추적
+**러닝일지북**은 당신의 러닝 기록을 세상에 하나 밖에 없는 책으로 만드는 서비스입니다.
+
+### 제작 의도
+
+최근 러닝은 단순한 운동을 넘어 라이프스타일의 일부가 되고 있습니다. 사람들은 자신의 러닝 기록을 SNS에 공유하며 성취감을 나누고 싶어합니다.
+
+**러닝일지북**은 이러한 심리에 부합하면서도 한 걸음 더 나아갑니다:
+
+- **개인의 경험을 책으로 기록**: SNS의 '지나가는 기록'이 아닌, **물리적인 책**으로 영구 보존
+- **연 단위 수요 창출**: 단발성 기록이 아닌 매년 새로운 연도의 러닝 기록을 책으로 제작하도록 설계
+  - 1월부터 12월까지 한 해의 모든 러닝 기록을 담아내고, 해마다 반복되도록 유도
+  - 지속적인 서비스 수요 창출
+- **선순환 구조**: 책을 만들기 위해 러닝 기록을 더 꼼꼼히 남기게 되고, 책을 SNS에 공유하면서 파급효과가 커질 경우 더 많은 사람들이 책을 만들기 위해 뛰게 되는 긍정적인 순환
+
+이렇게 만들어진 책은 당신의 노력이 담긴 소중한 추억이 됩니다.
 
 ---
 
-## 설치
+## 🚀 빠른 시작
 
+### 1단계: 환경 설정
+
+#### 사전 요구사항
+- Python 3.10 이상
+- Node.js 14 이상
+- npm 또는 yarn
+
+#### 설치
+
+**저장소 클론:**
 ```bash
-pip install -e .
+git clone <repository-url>
+cd Custom_Running_book
 ```
 
-또는 설치 없이 바로 사용:
-
-```python
-import sys; sys.path.insert(0, "/path/to/bookprintapi-python-sdk")
-from bookprintapi import Client
+**Python 가상 환경 생성:**
+```bash
+python -m venv venv
+# Windows
+venv\Scripts\activate
+# Mac/Linux
+source venv/bin/activate
 ```
 
-**의존성**: `requests`, `python-dotenv` (Python 3.10+)
+**의존성 설치:**
+```bash
+# 루트에서
+pip install -r requirements.txt
+```
 
----
+#### 환경 변수 설정
 
-## 빠른 시작
-
-### 1. API Key 설정
-
+**`.env` 파일 생성** (프로젝트 루트 `Custom_Running_book/`에):
 ```bash
 cp .env.example .env
 ```
 
-`.env` 파일에 API Key를 입력하세요:
-
+`.env` 파일 수정:
 ```
+# BookPrintAPI 설정 (Sandbox 환경)
 BOOKPRINT_API_KEY=SBxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 BOOKPRINT_BASE_URL=https://api-sandbox.sweetbook.com/v1
-```
 
-> API Key는 BookPrintAPI 웹사이트에서 발급받을 수 있습니다.
-> Sandbox 테스트 시 `api-sandbox.sweetbook.com`을, 운영 시 `api.sweetbook.com`을 사용하세요.
+# JWT 설정
+SECRET_KEY=your-secret-key-here
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=60
 
-### 2. 첫 번째 코드
-
-```python
-from bookprintapi import Client
-
-client = Client()  # .env에서 API Key 자동 로드
-
-# 내 책 목록 조회
-result = client.books.list(status="finalized")
-print(result)
+# 데이터베이스 (SQLite)
+DATABASE_URL=sqlite:///./running_book.db
 ```
 
 ---
 
-## 전체 흐름: 책 생성부터 주문까지
+### 2단계: 로컬에서 실행
 
-```
-1. 책 생성 (draft)          client.books.create(...)
-2. 사진 업로드              client.photos.upload(...)
-3. 표지 생성                client.covers.create(...)
-4. 내지 페이지 삽입          client.contents.insert(...)  (반복)
-5. 책 확정 (finalized)      client.books.finalize(...)
-6. 가격 견적                client.orders.estimate(...)
-7. 주문 생성                client.orders.create(...)     ← 충전금 차감
-8. 주문 상태 확인            client.orders.get(...)
+#### 터미널 1: 백엔드 실행
+
+```bash
+cd backend
+uvicorn main:app --reload
 ```
 
-### 전체 예시
+출력 예시:
+```
+INFO:     Uvicorn running on http://127.0.0.1:8000
+INFO:     Application startup complete
+```
 
+#### 터미널 2: 프론트엔드 실행
+
+```bash
+cd frontend
+npm run dev
+```
+
+출력 예시:
+```
+VITE v4.x.x  ready in xxx ms
+
+➜  Local:   http://localhost:5173/
+➜  press h to show help
+```
+
+#### 브라우저 접속
+- 프론트엔드: http://localhost:5173/
+- 백엔드 API 문서: http://localhost:8000/docs (Swagger UI)
+
+---
+
+## 📖 서비스 흐름
+
+| Step | 기능 | 기술 |
+|------|------|------|
+| 1️⃣ **회원가입** | 사용자명, 이메일, 비밀번호로 계정 생성 | 자체 구현 (JWT 인증) |
+| 2️⃣ **로그인** | JWT 토큰 발급 (로그인 필수) | 자체 구현 |
+| 3️⃣ **러닝 기록 입력** | 달력 UI에서 날짜별 러닝 기록, 수상 기록 입력 | 자체 구현 (프론트엔드) |
+| 4️⃣ **책 생성** | 입력된 기록으로 포토북 생성<br>(초안 → 표지 → 페이지 → 확정) | **스위트북 API 사용**<br>(`books.create`, `covers.create`,<br>`contents.insert`, `books.finalize`) |
+| 5️⃣ **미리보기** | 생성된 책의 예상 가격 표시 | **스위트북 API**<br>(`orders.estimate`) |
+| 6️⃣ **배송지 입력** | 배송지 선택 또는 신규 등록 | 자체 구현 (사용자별 관리) |
+| 7️⃣ **주문 생성** | 확정된 책으로 최종 주문 | **스위트북 API**<br>(`orders.create`) |
+| 8️⃣ **주문 추적** | 마이페이지에서 주문 상태 확인<br>주문 취소, 배송지 변경 | 자체 구현 (DB) +<br> **스위트북 API 연동** <br>(`orders/{order_uid}/cancel`, `/orders/{order_uid}/shipping`)
+
+---
+
+## 🔌 API 엔드포인트 구현
+
+### 📦 스위트북(BookPrintAPI) 활용 기능
+
+스위트북의 공식 Python SDK([`bookprintapi/`](../bookprintapi/))를 사용하여 포토북 생성 및 주문 기능 구현:
+
+| 엔드포인트 | 스위트북 API 메서드 | 기능 |
+|-----------|-------------------|------|
+| **POST /api/books/create-stream** | `books.create()`<br>`covers.create()`<br>`contents.insert()`<br>`books.finalize()` | **책 생성**: 러닝 기록 입력받아 포토북 초안 생성 → 표지 설계 → 페이지 삽입 → 최종 확정<br>진행 상황을 SSE로 실시간 브라우저 전송 |
+| **POST /api/books/estimate** | `orders.estimate()` | **가격 견적**: 생성된 책의 예상 가격 계산 |
+| **POST /api/orders/confirm-order** | `orders.create()` | **주문 생성**: 확정된 책으로 최종 주문 생성<br>스위트북 `orderUid` 발급받아 DB 저장 |
+
+---
+
+### 💻 자체 구현 기능
+
+스위트북 API 외에 서비스 운영을 위해 자체 구현한 백엔드 API:
+
+| 엔드포인트 | 기능 |
+|-----------|------|
+| **POST /api/auth/signup**<br>**POST /api/auth/login**<br>**GET /api/auth/me** | **사용자 인증**: 회원가입, 로그인, 세션 관리 (JWT) |
+| **GET /api/addresses**<br>**POST /api/addresses**<br>**PUT /api/addresses/{id}**<br>**DELETE /api/addresses/{id}** | **배송지 관리**: 사용자별 배송지 저장/수정/삭제 (자체 DB) |
+| **GET /api/orders/my** | 내 주문 조회, 취소, 배송지 변경<br>(스위트북 API와 자체 DB 병행) |
+
+---
+
+## 🛠️ 기술 스택
+
+### 백엔드
+- **Framework**: FastAPI (Python 3.10+)
+- **Database**: SQLite (로컬 개발용)
+- **ORM**: SQLAlchemy
+- **인증**: JWT (PyJWT, python-jose)
+- **외부 API**: [BookPrintAPI Python SDK](../bookprintapi/) (포토북 제작 및 주문)
+
+### 프론트엔드
+- **Framework**: React 18
+- **빌드 도구**: Vite
+- **상태 관리**: Context API
+- **스타일**: CSS3
+
+---
+
+## 📚 스위트북 API 활용 방식
+
+### 초기화
 ```python
 from bookprintapi import Client
 
-client = Client()
+client = Client(
+    api_key=os.getenv("BOOKPRINT_API_KEY"),
+    environment="sandbox"  # Sandbox 테스트 환경
+)
+```
 
-# 1. 책 생성
+### 구현된 기능별 사용 예시
+
+#### 1. 책 생성 흐름
+```python
+# ① 책 초안 생성
 book = client.books.create(
     book_spec_uid="SQUAREBOOK_HC",
-    title="우리 가족 앨범",
+    title="2024 나의 러닝 일지",
     creation_type="TEST"
 )
 book_uid = book["data"]["bookUid"]
-print(f"책 생성: {book_uid}")
 
-# 2. 사진 업로드
-client.photos.upload(book_uid, "photo1.jpg")
-client.photos.upload(book_uid, "photo2.jpg")
-
-# 3. 표지 생성
-client.covers.create(book_uid,
-    template_uid="COVER_TEMPLATE_UID",
-    parameters={"title": "우리 가족 앨범", "frontPhoto": "photo1.jpg"}
+# ② 표지 생성
+client.covers.create(
+    book_uid,
+    template_uid="cover_template",
+    parameters={...}
 )
 
-# 4. 내지 페이지 삽입
-client.contents.insert(book_uid,
-    template_uid="CONTENT_TEMPLATE_UID",
-    parameters={"photo": "photo2.jpg", "text": "즐거운 하루"}
-)
+# ③ 내지 페이지 삽입 (반복)
+for record in running_records:
+    client.contents.insert(
+        book_uid,
+        template_uid="content_template",
+        parameters={
+            "date": record["date"],
+            "distance": record["km"],
+            "pace": record["pace"],
+            "memo": record["memo"]
+        }
+    )
 
-# 5. 책 확정
+# ④ 책 확정
 client.books.finalize(book_uid)
-print("책 확정 완료!")
+```
 
-# 6. 가격 견적
-estimate = client.orders.estimate([{"bookUid": book_uid, "quantity": 1}])
-paid = estimate["data"]["paidCreditAmount"]
-print(f"결제 금액: {paid:,.0f}원 (VAT 포함)")
+#### 2. 가격 견적
+```python
+estimate = client.orders.estimate(
+    [{"bookUid": book_uid, "quantity": 1}]
+)
+```
 
-# 7. 주문
+#### 3. 주문 생성
+```python
 order = client.orders.create(
     items=[{"bookUid": book_uid, "quantity": 1}],
     shipping={
-        "recipientName": "홍길동",
-        "recipientPhone": "010-1234-5678",
-        "postalCode": "06100",
-        "address1": "서울특별시 강남구 테헤란로 123",
-        "address2": "4층",
-        "memo": "부재 시 경비실"
-    },
-    external_ref="MY-ORDER-001"
+        "recipientName": "...",
+        "recipientPhone": "...",
+        "postalCode": "...",
+        "address1": "...",
+        "address2": "..."
+    }
 )
-order_uid = order["data"]["orderUid"]
-print(f"주문 완료: {order_uid}")
-
-# 8. 주문 상태 확인
-detail = client.orders.get(order_uid)
-print(f"상태: {detail['data']['orderStatusDisplay']}")
 ```
 
----
 
-## SDK 구조
+## 📝 샘플 데이터 구조
 
-```python
-client = Client(api_key="SBxxxxx.xxxx")
-
-client.books       # 책 생성/조회/확정/삭제
-client.photos      # 사진 업로드/조회/삭제
-client.covers      # 표지 생성/조회/삭제
-client.contents    # 내지 삽입/삭제
-client.orders      # 주문 생성/조회/취소/배송지변경
-client.credits     # 충전금 잔액/거래내역/Sandbox충전
+### 러닝 기록 (RunRecord)
+```json
+{
+    "date": "2024-01-15",
+    "km": 5.2,
+    "pace": "5'30\"",
+    "memo": "날씨 좋음, 아침 운동"
+}
 ```
 
----
-
-## API 레퍼런스
-
-### Books
-
-```python
-# 목록 조회
-client.books.list(status="finalized", limit=20, offset=0)
-
-# 생성
-client.books.create(book_spec_uid="SQUAREBOOK_HC", title="제목", creation_type="TEST")
-
-# 상세 조회
-client.books.get("bk_xxxx")
-
-# 확정 (이후 내용 수정 불가)
-client.books.finalize("bk_xxxx")
-
-# 삭제 (draft만 가능)
-client.books.delete("bk_xxxx")
+### 수상 기록 (Award)
+```json
+{
+    "name": "풀코스 완주",
+    "result": "2024-02-10"
+}
 ```
 
-### Photos
-
-```python
-# 업로드 (1장)
-client.photos.upload("bk_xxxx", "image.jpg")
-
-# 업로드 (여러 장)
-client.photos.upload_multiple("bk_xxxx", ["img1.jpg", "img2.jpg"])
-
-# 목록
-client.photos.list("bk_xxxx")
-
-# 삭제
-client.photos.delete("bk_xxxx", "photo250105143052123.JPG")
-```
-
-### Covers
-
-```python
-# 표지 생성 (파라미터에 사진 URL 또는 업로드 파일명 지정)
-client.covers.create("bk_xxxx",
-    template_uid="tpl_cover001",
-    parameters={"title": "My Book", "frontPhoto": "$upload"},
-    files=["cover.jpg"]
-)
-
-# 조회 / 삭제
-client.covers.get("bk_xxxx")
-client.covers.delete("bk_xxxx")
-```
-
-### Contents
-
-```python
-# 내지 페이지 삽입
-client.contents.insert("bk_xxxx",
-    template_uid="tpl_content001",
-    parameters={"date": "2026-01-01", "diary_text": "오늘의 일기"},
-    break_before="page"   # "page": 새 페이지부터 시작
-)
-
-# 전체 내지 삭제 (표지 유지)
-client.contents.clear("bk_xxxx")
-```
-
-### Orders
-
-```python
-# 견적 (충전금 차감 없음)
-client.orders.estimate([{"bookUid": "bk_xxxx", "quantity": 1}])
-
-# 주문 생성 (충전금 즉시 차감)
-client.orders.create(
-    items=[{"bookUid": "bk_xxxx", "quantity": 1}],
-    shipping={
-        "recipientName": "홍길동",
-        "recipientPhone": "010-1234-5678",
-        "postalCode": "06100",
-        "address1": "서울특별시 강남구 테헤란로 123",
-    },
-    external_ref="MY-ORDER-001"
-)
-
-# 묶음 주문 (여러 책을 한 번에)
-client.orders.create(
-    items=[
-        {"bookUid": "bk_xxxx", "quantity": 1},
-        {"bookUid": "bk_yyyy", "quantity": 2},
+### 책 생성 요청
+```json
+{
+    "bookTitle": "2024 나의 러닝 여정",
+    "recordYear": 2024,
+    "selectedPiece": "piece1",
+    "runRecords": [
+        {"date": "2024-01-15", "km": 5.2, "pace": "5'30\"", "memo": "..."},
+        {"date": "2024-01-20", "km": 10.0, "pace": "5'00\"", "memo": "..."}
     ],
-    shipping={...}
-)
-
-# 목록 / 상세
-client.orders.list(status=20)
-client.orders.get("or_xxxxxxxxxxxx")
-
-# 취소 (PAID/PDF_READY 상태만, 충전금 자동 반환)
-client.orders.cancel("or_xxxxxxxxxxxx", "주문 취소합니다")
-
-# 배송지 변경 (발송 전, 변경할 필드만)
-client.orders.update_shipping("or_xxxxxxxxxxxx", recipient_phone="010-9999-8888")
-```
-
-### Credits (충전금)
-
-```python
-# 잔액 조회
-client.credits.get_balance()
-
-# 거래 내역
-client.credits.get_transactions(limit=50)
-
-# Sandbox 테스트 충전 (sandbox 환경 전용)
-client.credits.sandbox_charge(100000, memo="테스트 충전")
+    "awards": [
+        {"name": "풀코스 완주", "result": "2024-02-10"}
+    ]
+}
 ```
 
 ---
 
-## 주문 상태
+## 🗄️ 데이터베이스 스키마
 
-| 상태 | 코드 | 설명 | 취소 | 배송지변경 |
-|------|:----:|------|:----:|:--------:|
-| PAID | 20 | 결제 완료 | O | O |
-| PDF_READY | 25 | PDF 생성 완료 | O | O |
-| CONFIRMED | 30 | 제작 확정 | X | O |
-| IN_PRODUCTION | 40 | 인쇄 중 | X | X |
-| PRODUCTION_COMPLETE | 50 | 인쇄 완료 | X | X |
-| SHIPPED | 60 | 발송 완료 | X | X |
-| DELIVERED | 70 | 배송 완료 | X | X |
-| CANCELLED | 80/81 | 취소됨 | - | - |
+### User (사용자)
+- id (PK)
+- username (unique)
+- name
+- email
+- password (hashed)
+- phone
+- created_at
 
-```
-PAID → PDF_READY → CONFIRMED → IN_PRODUCTION → PRODUCTION_COMPLETE → SHIPPED → DELIVERED
+### Address (배송지)
+- id (PK)
+- user_id (FK) → User
+- recipient_name
+- recipient_phone
+- postal_code
+- address1
+- address2
+- is_default
+- created_at
+
+### Book (러닝일지북)
+- id (PK)
+- user_id (FK) → User
+- title
+- record_year
+- book_uid (BookPrintAPI에서 발급)
+- status (draft/finalized)
+- created_at
+
+### Order (주문)
+- id (PK)
+- user_id (FK) → User
+- book_id (FK) → Book
+- order_uid (BookPrintAPI에서 발급)
+- address_id (FK) → Address
+- total_price
+- status
+- ordered_at
+
+---
+
+## 🐛 트러블슈팅
+
+### 문제: "API Key not found" 에러
+**해결**: `backend/.env` 파일을 생성하고 BOOKPRINT_API_KEY를 입력했는지 확인하세요.
+
+### 문제: CORS 에러 ("No 'Access-Control-Allow-Origin'")
+**해결**: 백엔드가 프론트엔드의 요청을 허용하는지 확인하세요.
+- 프론트엔드: `http://localhost:5173`
+- 백엔드: `http://localhost:8000`
+- [backend/main.py](../backend/main.py#L11-L16)에서 CORS 설정 확인
+
+### 문제: ModuleNotFoundError: "No module named 'bookprintapi'"
+**해결**: 백엔드 폴더에서 `pip install -e .`를 실행하세요. (또는 bookprintapi 폴더를 Python path에 추가)
+
+### 문제: "Database is locked" 에러
+**해결**: SQLite 데이터베이스가 동시에 여러 프로세스에서 접근했을 수 있습니다.
+```bash
+# 데이터베이스 파일 삭제 후 재시작
+rm backend/running_book.db
 ```
 
 ---
 
-## 가격 계산
 
-```
-상품금액 = 단가 × 수량
-합계     = 상품금액 + 배송비(3,000원)
-결제금액 = Floor(합계 × 1.1 / 10) × 10   ← VAT 10% 포함, 10원 미만 절삭
-```
-
-> 정확한 금액은 `client.orders.estimate()`로 사전 확인하세요.
-
----
-
-## 에러 처리
-
-```python
-from bookprintapi import Client, ApiError
-
-client = Client()
-
-try:
-    client.orders.create(
-        items=[{"bookUid": "bk_invalid", "quantity": 1}],
-        shipping={...}
-    )
-except ApiError as e:
-    print(f"오류: {e}")                 # [400] Bad Request
-    print(f"상태코드: {e.status_code}")  # 400
-    print(f"상세: {e.details}")          # ["Book을 찾을 수 없습니다: bk_invalid"]
-
-    # 충전금 부족 시
-    if e.status_code == 402:
-        print("충전금이 부족합니다. 충전 후 다시 시도하세요.")
-```
-
----
-
-## 환경 설정
-
-### 방법 1: `environment` 파라미터 (권장)
-
-```python
-# Sandbox
-client = Client(api_key="SBxxxxx.xxxx", environment="sandbox")
-
-# Live (기본값)
-client = Client(api_key="SBxxxxx.xxxx")
-```
-
-### 방법 2: 환경변수
-
-| 변수 | 설명 | 기본값 |
-|------|------|--------|
-| `BOOKPRINT_API_KEY` | API Key (필수) | - |
-| `BOOKPRINT_ENV` | `sandbox` 또는 `live` | `live` |
-| `BOOKPRINT_BASE_URL` | API URL 직접 지정 (위 두 변수보다 우선) | - |
-
-| 환경 | URL |
-|------|-----|
-| Live | `https://api.sweetbook.com/v1` |
-| Sandbox | `https://api-sandbox.sweetbook.com/v1` |
-
-> Sandbox에서 생성한 주문은 실제 인쇄/배송되지 않습니다. 테스트 충전금으로 자유롭게 테스트하세요.
-
----
-
-## 예제 CLI로 테스트하기
-
-`examples/` 폴더에 3개의 CLI 예제가 있습니다. 아래 순서대로 따라하면 충전 → 책 조회 → 견적 → 주문 → 확인 → 취소까지 전체 플로우를 체험할 수 있습니다.
-
-### 준비
-
-```bash
-cd examples
-cp ../.env.example ../.env
-# .env에 API Key 입력, BOOKPRINT_BASE_URL은 sandbox로 설정
-```
-
-### Step 1. 충전금 충전 (Sandbox)
-
-```bash
-# 잔액 확인
-python simple_credits.py balance
-
-# 테스트 충전금 10만원 충전
-python simple_credits.py charge 100000
-
-# 거래 내역 확인
-python simple_credits.py transactions
-```
-
-### Step 2. 내 책 목록 확인
-
-```bash
-# finalized 책만 조회 (주문 가능한 책)
-python simple_books.py list --status finalized
-
-# 책이 없으면 새로 생성
-python simple_books.py create "테스트북" --type TEST
-```
-
-### Step 3. 견적 조회
-
-```bash
-# bookUid를 Step 2에서 확인한 값으로 교체
-python simple_orders.py estimate bk_xxxxxxxxxxxx
-```
-
-출력 예시:
-```
-==================================================
-  견적 결과
-==================================================
-  bk_4NH4AWpcp0vx (26p x 1)  20,300원 x 1 = 20,300원
-──────────────────────────────────────────────────
-  상품 금액                20,300원
-  배송비                    3,000원
-  합계 (세전)              23,300원
-──────────────────────────────────────────────────
-  결제금액 (VAT포함)       25,630원
-  현재 충전금             401,000원
-  결제 후 잔액            375,370원
-==================================================
-```
-
-### Step 4. 주문 생성
-
-```bash
-python simple_orders.py create bk_xxxxxxxxxxxx \
-  --name "홍길동" \
-  --phone "010-1234-5678" \
-  --postal "06100" \
-  --addr1 "서울특별시 강남구 테헤란로 123" \
-  --ref "MY-TEST-001"
-```
-
-출력 예시:
-```
-주문 생성 완료!
-  주문번호: or_25ENPqM4bDxX
-  결제금액: 25,630원
-  충전금 잔액: 375,370원
-```
-
-### Step 5. 주문 확인
-
-```bash
-# 주문 목록
-python simple_orders.py list
-
-# 주문 상세
-python simple_orders.py get or_25ENPqM4bDxX
-```
-
-### Step 6. 주문 취소 (테스트이므로)
-
-```bash
-# 취소 (PAID 상태만 가능, 충전금 자동 반환)
-python simple_orders.py cancel or_25ENPqM4bDxX "테스트 주문 취소"
-
-# 충전금 복원 확인
-python simple_credits.py balance
-```
-
-### 전체 명령어 레퍼런스
-
-```bash
-# === simple_books.py ===
-python simple_books.py list                         # 전체 책 목록
-python simple_books.py list --status finalized       # finalized만
-python simple_books.py create "제목"                 # 책 생성
-python simple_books.py create "제목" --spec SQUAREBOOK_HC --type TEST
-python simple_books.py get <bookUid>                 # 책 상세
-python simple_books.py finalize <bookUid>            # 책 확정
-python simple_books.py delete <bookUid>              # 책 삭제 (draft만)
-
-# === simple_orders.py ===
-python simple_orders.py estimate <bookUid> [수량]    # 견적
-python simple_orders.py create <bookUid> [수량]      # 주문 (배송지 입력)
-python simple_orders.py list                         # 주문 목록
-python simple_orders.py list --status 20             # 상태별 필터
-python simple_orders.py get <orderUid>               # 주문 상세
-python simple_orders.py cancel <orderUid> "사유"      # 주문 취소
-python simple_orders.py shipping <orderUid> --name 홍길동 --phone 010-xxxx  # 배송지 변경
-
-# === simple_credits.py ===
-python simple_credits.py balance                     # 잔액 조회
-python simple_credits.py transactions                # 거래 내역
-python simple_credits.py charge <금액>               # Sandbox 충전
-python simple_credits.py charge <금액> "메모"         # 메모 포함 충전
-```
-
----
-
-## 파일 구조
-
-```
-bookprintapi-python-sdk/
-├── bookprintapi/
-│   ├── __init__.py       # Client, ApiError, ResponseParser
-│   ├── client.py         # Core HTTP 클라이언트 (인증, 재시도, 에러처리)
-│   ├── exceptions.py     # ApiError, ValidationError
-│   ├── response.py       # ResponseParser
-│   ├── books.py          # 책 생성/조회/확정/삭제
-│   ├── photos.py         # 사진 업로드/조회/삭제
-│   ├── covers.py         # 표지 생성/조회/삭제
-│   ├── contents.py       # 내지 삽입/삭제
-│   ├── orders.py         # 주문 생성/조회/취소/배송지변경
-│   └── credits.py        # 충전금 잔액/거래내역/Sandbox충전
-│   └── webhook.py        # 웹훅 서명 검증 유틸
-├── examples/
-│   ├── simple_books.py   # 책 CLI (list, create, get, finalize, delete)
-│   ├── simple_orders.py  # 주문 CLI (estimate, create, list, get, cancel, shipping)
-│   └── simple_credits.py # 충전금 CLI (balance, transactions, charge)
-├── .env.example          # 환경변수 템플릿
-├── pyproject.toml        # 패키지 설정
-└── README.md
-```
+**Happy Running & Reading! 📖🏃**
