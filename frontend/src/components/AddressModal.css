@@ -1,0 +1,108 @@
+.addr-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.75); z-index: 1200;
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+}
+.addr-modal {
+  background: #1A1612; border: 1px solid rgba(232,99,42,0.2);
+  width: 100%; max-width: 500px; max-height: 80vh;
+  display: flex; flex-direction: column; border-radius: 4px;
+}
+.addr-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 20px 24px 16px; border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.addr-header h3 {
+  font-family: 'Black Han Sans', sans-serif; font-size: 20px; color: #fff;
+}
+.addr-close {
+  background: none; border: none; color: rgba(255,255,255,0.3);
+  font-size: 18px; cursor: pointer; transition: color 0.2s;
+}
+.addr-close:hover { color: #fff; }
+
+/* 배송지 목록 */
+.addr-list {
+  flex: 1; overflow-y: auto; padding: 12px 16px; max-height: 320px;
+}
+.addr-empty { font-size: 13px; color: rgba(255,255,255,0.3); text-align: center; padding: 24px 0; }
+.addr-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 14px 16px; margin-bottom: 8px;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 6px; cursor: pointer; transition: all 0.2s;
+}
+.addr-item:hover { border-color: rgba(232,99,42,0.3); }
+.addr-item.selected { border-color: var(--orange); background: rgba(232,99,42,0.08); }
+.addr-check { padding-top: 2px; }
+.addr-radio {
+  width: 18px; height: 18px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.25); transition: all 0.2s;
+}
+.addr-radio.on { border-color: var(--orange); background: var(--orange); box-shadow: inset 0 0 0 3px #1A1612; }
+.addr-info { flex: 1; }
+.addr-name-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.addr-recipient { font-size: 14px; font-weight: 500; color: #fff; }
+.addr-phone { font-size: 12px; color: rgba(255,255,255,0.4); }
+.addr-badge {
+  font-size: 10px; padding: 2px 7px;
+  background: rgba(232,99,42,0.2); color: var(--orange);
+  border: 1px solid rgba(232,99,42,0.3); border-radius: 2px;
+}
+.addr-address { font-size: 12px; color: rgba(255,255,255,0.5); font-weight: 300; line-height: 1.5; }
+
+/* 추가 버튼 */
+.addr-add-open-btn {
+  margin: 4px 16px 12px;
+  background: transparent; border: 1px dashed rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.4); font-size: 13px; padding: 10px;
+  cursor: pointer; transition: all 0.2s; border-radius: 4px;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+.addr-add-open-btn:hover { border-color: var(--orange); color: var(--orange); }
+
+/* 추가 폼 */
+.addr-add-form {
+  padding: 16px; border-top: 1px solid rgba(255,255,255,0.06);
+}
+.addr-add-title {
+  font-family: 'Oswald', sans-serif; font-size: 11px; letter-spacing: 2px;
+  color: var(--orange); text-transform: uppercase; margin-bottom: 14px;
+}
+.addr-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+.addr-field label { font-size: 11px; color: rgba(255,255,255,0.35); }
+.addr-field input {
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  color: #fff; padding: 9px 12px; font-size: 13px;
+  font-family: 'Noto Sans KR', sans-serif; outline: none; transition: border-color 0.2s;
+}
+.addr-field input:focus { border-color: var(--orange); }
+.addr-field input::placeholder { color: rgba(255,255,255,0.2); }
+.addr-default-check {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; color: rgba(255,255,255,0.5); cursor: pointer; margin-bottom: 12px;
+}
+.addr-msg {
+  font-size: 12px; color: #97C459; margin-bottom: 10px;
+  padding: 8px 10px; background: rgba(45,106,63,0.15); border-radius: 4px;
+}
+.addr-msg.err { color: #F09595; background: rgba(226,75,74,0.12); }
+.addr-add-btns { display: flex; gap: 8px; }
+
+/* 하단 버튼 */
+.addr-footer {
+  display: flex; gap: 10px; padding: 12px 16px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+.addr-cancel-btn {
+  flex: 1; background: transparent; border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.5); font-size: 14px; padding: 12px;
+  cursor: pointer; font-family: 'Noto Sans KR', sans-serif; transition: all 0.2s;
+}
+.addr-cancel-btn:hover { border-color: rgba(255,255,255,0.4); color: #fff; }
+.addr-confirm-btn {
+  flex: 2; background: var(--orange); color: #fff;
+  font-family: 'Black Han Sans', sans-serif; font-size: 16px;
+  padding: 12px; border: none; cursor: pointer; transition: background 0.2s;
+}
+.addr-confirm-btn:hover { background: var(--orange-dark); }

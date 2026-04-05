@@ -5,10 +5,14 @@ from typing import Optional
 from sqlalchemy.orm import Session
 from database import get_db
 from auth import get_current_user
-import models
-import json
-import asyncio
+import models, json, asyncio, os, sys
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
+from bookprintapi import Client
+from dotenv import load_dotenv
 from services.running_book import create_running_book, calc_price
+
+load_dotenv()
+client = Client(api_key=os.getenv("BOOKPRINT_API_KEY"), environment="sandbox")
 
 router = APIRouter()
 
@@ -35,6 +39,7 @@ class CreateOrderRequest(BaseModel):
     recordYear: int
     totalPrice: int
     hasAppendix: bool
+    addressId: int  # Address 테이블 ID
 
 @router.post("/estimate")
 async def estimate_price(
@@ -50,7 +55,6 @@ async def create_book_stream(
     req: CreateBookRequest,
     current_user: models.User = Depends(get_current_user),
 ):
-    """SSE로 책 생성 진행률 스트리밍"""
     has_appendix = any(a.name for a in (req.awards or []))
     price_info = calc_price(has_appendix)
     order_data = {
@@ -78,7 +82,7 @@ async def create_book_stream(
 
         while True:
             try:
-                msg = await asyncio.wait_for(queue.get(), timeout=120)
+                msg = await asyncio.wait_for(queue.get(), timeout=180)
                 yield f"data: {json.dumps(msg, ensure_ascii=False)}\n\n"
                 if msg.get("done") or msg.get("error"):
                     break
@@ -103,11 +107,35 @@ async def confirm_order(
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """책 생성 완료 후 주문 확정 (DB 저장)"""
+    """책 생성 완료 후 Sweetbook 주문 생성 + DB 저장"""
     try:
+        # 선택한 배송지 조회
+        addr = db.query(models.Address).filter(
+            models.Address.id == req.addressId,
+            models.Address.user_id == current_user.id
+        ).first()
+        if not addr:
+            raise HTTPException(status_code=400, detail="배송지를 찾을 수 없습니다")
+
+        # 1. Sweetbook Orders API 호출 → order_uid 발급
+        sweetbook_order = client.orders.create(
+            items=[{"bookUid": req.bookUid, "quantity": 1}],
+            shipping={
+                "recipientName":  addr.recipient_name,
+                "recipientPhone": addr.recipient_phone,
+                "postalCode":     addr.postal_code,
+                "address1":       addr.address1,
+                "address2":       addr.address2 or "",
+            }
+        )
+        order_uid = sweetbook_order["data"]["orderUid"]
+
+        # 2. DB 저장
         order = models.Order(
             user_id=current_user.id,
+            address_id=req.addressId,
             book_uid=req.bookUid,
+            order_uid=order_uid,
             book_title=req.bookTitle,
             record_year=req.recordYear,
             month_count=12,
@@ -117,6 +145,15 @@ async def confirm_order(
         db.add(order)
         db.commit()
         db.refresh(order)
-        return {"success": True, "data": {"order_id": order.id}}
+
+        return {
+            "success": True,
+            "data": {
+                "order_id":  order.id,
+                "order_uid": order_uid,
+            }
+        }
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))

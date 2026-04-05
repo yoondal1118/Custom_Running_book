@@ -19,19 +19,53 @@ class EstimateRequest(BaseModel):
     bookUid: str
     quantity: Optional[int] = 1
 
-class CreateOrderRequest(BaseModel):
-    bookUid: str
-    quantity: Optional[int] = 1
-
 class CancelRequest(BaseModel):
     cancelReason: str
+
+class UpdateShippingRequest(BaseModel):
+    addressId: int  # Address 테이블 ID
+
+def _addr_to_shipping(addr: models.Address) -> dict:
+    return {
+        "recipientName":  addr.recipient_name,
+        "recipientPhone": addr.recipient_phone,
+        "postalCode":     addr.postal_code,
+        "address1":       addr.address1,
+        "address2":       addr.address2 or "",
+    }
+
+def _order_dict(o: models.Order) -> dict:
+    estimated_delivery = (o.ordered_at + timedelta(weeks=2)).strftime("%Y-%m-%d")
+    addr = None
+    if o.address:
+        addr = {
+            "id":              o.address.id,
+            "recipient_name":  o.address.recipient_name,
+            "recipient_phone": o.address.recipient_phone,
+            "postal_code":     o.address.postal_code,
+            "address1":        o.address.address1,
+            "address2":        o.address.address2,
+        }
+    return {
+        "id":                o.id,
+        "book_uid":          o.book_uid,
+        "order_uid":         o.order_uid,
+        "book_title":        o.book_title,
+        "record_year":       o.record_year,
+        "month_count":       o.month_count,
+        "total_price":       o.total_price,
+        "status":            o.status,
+        "cancel_reason":     o.cancel_reason,
+        "ordered_at":        o.ordered_at.strftime("%Y-%m-%d %H:%M"),
+        "estimated_delivery": estimated_delivery,
+        "address":           addr,
+    }
 
 @router.post("/estimate")
 async def estimate_order(
     req: EstimateRequest,
     current_user: models.User = Depends(get_current_user),
 ):
-    """주문 전 Sweetbook API로 실제 예상 금액 조회"""
     try:
         result = client.orders.estimate([
             {"bookUid": req.bookUid, "quantity": req.quantity}
@@ -40,46 +74,15 @@ async def estimate_order(
         return {
             "success": True,
             "data": {
-                "productAmount":   data.get("productAmount", 0),
-                "shippingFee":     data.get("shippingFee", 0),
-                "packagingFee":    data.get("packagingFee", 0),
-                "totalAmount":     data.get("totalAmount", 0),
-                "creditBalance":   data.get("creditBalance", 0),
+                "productAmount":    data.get("productAmount", 0),
+                "shippingFee":      data.get("shippingFee", 0),
+                "packagingFee":     data.get("packagingFee", 0),
+                "totalAmount":      data.get("totalAmount", 0),
+                "creditBalance":    data.get("creditBalance", 0),
                 "creditSufficient": data.get("creditSufficient", True),
-                "currency":        data.get("currency", "KRW"),
+                "currency":         data.get("currency", "KRW"),
             }
         }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.post("/create")
-async def create_order(
-    req: CreateOrderRequest,
-    current_user: models.User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    try:
-        result = client.orders.create(
-            items=[{"bookUid": req.bookUid, "quantity": req.quantity}],
-            shipping={
-                "recipientName": current_user.name,
-                "recipientPhone": current_user.phone or "",
-                "postalCode": current_user.postal_code or "",
-                "address1": current_user.address or "",
-                "address2": current_user.address_detail or "",
-            }
-        )
-        order_uid = result["data"]["orderUid"]
-
-        db_order = db.query(models.Order).filter(
-            models.Order.book_uid == req.bookUid,
-            models.Order.user_id == current_user.id
-        ).first()
-        if db_order:
-            db_order.order_uid = order_uid
-            db.commit()
-
-        return {"success": True, "data": result["data"]}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -91,24 +94,7 @@ def my_orders(
     orders = db.query(models.Order).filter(
         models.Order.user_id == current_user.id
     ).order_by(models.Order.ordered_at.desc()).all()
-
-    result = []
-    for o in orders:
-        estimated_delivery = (o.ordered_at + timedelta(weeks=2)).strftime("%Y-%m-%d")
-        result.append({
-            "id": o.id,
-            "book_uid": o.book_uid,
-            "order_uid": o.order_uid,
-            "book_title": o.book_title,
-            "record_year": o.record_year,
-            "month_count": o.month_count,
-            "total_price": o.total_price,
-            "status": o.status,
-            "cancel_reason": o.cancel_reason,
-            "ordered_at": o.ordered_at.strftime("%Y-%m-%d %H:%M"),
-            "estimated_delivery": estimated_delivery,
-        })
-    return {"success": True, "data": result}
+    return {"success": True, "data": [_order_dict(o) for o in orders]}
 
 @router.post("/{order_id}/cancel")
 def cancel_order(
@@ -121,7 +107,6 @@ def cancel_order(
         models.Order.id == order_id,
         models.Order.user_id == current_user.id
     ).first()
-
     if not order:
         raise HTTPException(status_code=404, detail="주문을 찾을 수 없습니다")
     if order.status == "cancelled":
@@ -136,16 +121,7 @@ def cancel_order(
     order.status = "cancelled"
     order.cancel_reason = req.cancelReason
     db.commit()
-
     return {"success": True, "message": "주문이 취소되었습니다"}
-
-class UpdateShippingRequest(BaseModel):
-    recipientName: Optional[str] = None
-    recipientPhone: Optional[str] = None
-    postalCode: Optional[str] = None
-    address1: Optional[str] = None
-    address2: Optional[str] = None
-    shippingMemo: Optional[str] = None
 
 @router.patch("/{order_id}/shipping")
 def update_shipping(
@@ -158,30 +134,33 @@ def update_shipping(
         models.Order.id == order_id,
         models.Order.user_id == current_user.id
     ).first()
-
     if not order:
         raise HTTPException(status_code=404, detail="주문을 찾을 수 없습니다")
     if order.status == "cancelled":
         raise HTTPException(status_code=400, detail="취소된 주문은 배송지를 변경할 수 없습니다")
-    if not order.order_uid:
-        raise HTTPException(status_code=400, detail="주문 번호가 없습니다")
 
-    # 변경할 필드만 추출
-    payload = {k: v for k, v in req.dict().items() if v is not None}
-    if not payload:
-        raise HTTPException(status_code=400, detail="변경할 항목을 입력해주세요")
+    # 선택한 배송지 확인
+    addr = db.query(models.Address).filter(
+        models.Address.id == req.addressId,
+        models.Address.user_id == current_user.id
+    ).first()
+    if not addr:
+        raise HTTPException(status_code=404, detail="배송지를 찾을 수 없습니다")
 
-    try:
-        client.orders.update_shipping(order.order_uid, **{
-            k: v for k, v in {
-                "recipient_name":  req.recipientName,
-                "recipient_phone": req.recipientPhone,
-                "postal_code":     req.postalCode,
-                "address1":        req.address1,
-                "address2":        req.address2,
-                "shipping_memo":   req.shippingMemo,
-            }.items() if v is not None
-        })
-        return {"success": True, "message": "배송지가 변경되었습니다"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    # Sweetbook 배송지 변경
+    if order.order_uid:
+        try:
+            client.orders.update_shipping(order.order_uid, **{
+                "recipient_name":  addr.recipient_name,
+                "recipient_phone": addr.recipient_phone,
+                "postal_code":     addr.postal_code,
+                "address1":        addr.address1,
+                "address2":        addr.address2 or "",
+            })
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Sweetbook 배송지 변경 실패: {str(e)}")
+
+    # DB 업데이트
+    order.address_id = req.addressId
+    db.commit()
+    return {"success": True, "message": "배송지가 변경되었습니다", "data": _order_dict(order)}

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import AddressModal from './AddressModal'
 import './OrderModal.css'
 
 const PIECE_COLORS = [
@@ -24,7 +25,7 @@ function PieceSVG({ fill, light }) {
   )
 }
 
-// 단계 1: 주문서 작성
+// ── 단계 1: 주문서 작성 ──────────────────────────────────
 function StepForm({ onNext, user }) {
   const [recordYear, setRecordYear] = useState(2024)
   const [selectedPiece, setSelectedPiece] = useState('blue')
@@ -33,14 +34,40 @@ function StepForm({ onNext, user }) {
   const [bookTitle, setBookTitle] = useState('')
   const [errors, setErrors] = useState([])
   const [customPieceUrl, setCustomPieceUrl] = useState(null)
+  const [selectedAddress, setSelectedAddress] = useState(user?.default_address || null)
+  const [addrModalOpen, setAddrModalOpen] = useState(false)
+
+  const fillDummyData = () => {
+    setBookTitle('나의 러닝일지 2024')
+    setRecordYear(2024)
+    setSelectedPiece('blue')
+    setRunRows([
+      { date: '2024-01-03', km: '3.2',    pace: "6'30\"", memo: '새해 첫 러닝!' },
+      { date: '2024-01-10', km: '8.5',    pace: "5'45\"", memo: '컨디션 좋음' },
+      { date: '2024-01-20', km: '21.1',   pace: "5'10\"", memo: '하프 마라톤 완주!!' },
+      { date: '2024-02-07', km: '9.0',    pace: "5'40\"", memo: '' },
+      { date: '2024-02-25', km: '20.0',   pace: "5'10\"", memo: '대회 준비 20km' },
+      { date: '2024-03-10', km: '42.195', pace: "5'05\"", memo: '풀마라톤 완주!!!' },
+      { date: '2024-04-05', km: '6.5',    pace: "5'50\"", memo: '' },
+      { date: '2024-05-14', km: '11.0',   pace: "5'20\"", memo: '' },
+      { date: '2024-06-22', km: '7.0',    pace: "5'45\"", memo: '여름 저녁 러닝' },
+      { date: '2024-07-08', km: '5.5',    pace: "6'00\"", memo: '더위에도 완주' },
+      { date: '2024-08-19', km: '4.2',    pace: "6'10\"", memo: '' },
+      { date: '2024-09-15', km: '15.0',   pace: "5'15\"", memo: '가을 롱런' },
+      { date: '2024-10-06', km: '42.195', pace: "4'58\"", memo: '시즌 최고 기록!' },
+      { date: '2024-11-03', km: '10.0',   pace: "5'30\"", memo: '' },
+      { date: '2024-12-31', km: '5.0',    pace: "6'00\"", memo: '올해 마지막 러닝' },
+    ])
+    setAwards([
+      { name: '2024 서울 하프마라톤', result: '완주 (2:10:35)' },
+      { name: '2024 춘천 마라톤',     result: '완주 (4:28:12)' },
+    ])
+  }
 
   const handleDateChange = (i, val) => {
-    if (val) {
-      const year = parseInt(val.split('-')[0])
-      if (year !== recordYear) {
-        alert(`기록 년도(${recordYear}년) 내의 날짜만 선택할 수 있습니다`)
-        return
-      }
+    if (val && parseInt(val.split('-')[0]) !== recordYear) {
+      alert(`기록 년도(${recordYear}년) 내의 날짜만 선택할 수 있습니다`)
+      return
     }
     setRunRows(p => p.map((r, idx) => idx === i ? { ...r, date: val } : r))
   }
@@ -55,7 +82,7 @@ function StepForm({ onNext, user }) {
       if ((r.date || r.km) && (!r.date || !r.km || !r.pace))
         errs.push(`${i+1}번 기록의 날짜·거리·페이스를 모두 입력해주세요`)
     })
-    if (!user?.address) errs.push('배송지가 없습니다. 마이페이지에서 등록해주세요')
+    if (!selectedAddress) errs.push('배송지를 선택해주세요')
     return errs
   }
 
@@ -63,50 +90,26 @@ function StepForm({ onNext, user }) {
     const errs = validate()
     if (errs.length > 0) { setErrors(errs); return }
     setErrors([])
-    onNext({ bookTitle, recordYear, selectedPiece, runRecords: runRows.filter(r=>r.date&&r.km), awards })
+    onNext({
+      bookTitle, recordYear, selectedPiece,
+      runRecords: runRows.filter(r => r.date && r.km),
+      awards, selectedAddress
+    })
   }
 
-  const addRow = () => setRunRows(p => [...p, { date:'', km:'', pace:'', memo:'' }])
-  const removeRow = (i) => runRows.length > 1 && setRunRows(p => p.filter((_,idx)=>idx!==i))
-  const updateRow = (i,k,v) => setRunRows(p => p.map((r,idx)=>idx===i?{...r,[k]:v}:r))
-  const addAward = () => setAwards(p => [...p, { name:'', result:'' }])
-  const removeAward = (i) => awards.length > 1 && setAwards(p => p.filter((_,idx)=>idx!==i))
-  const updateAward = (i,k,v) => setAwards(p => p.map((a,idx)=>idx===i?{...a,[k]:v}:a))
-  const fillDummyData = () => {
-    setBookTitle('나의 러닝일지')
-    setRecordYear(2024)
-    setSelectedPiece('blue')
-    setRunRows([
-      { date: '2025-01-03', km: '3.2', pace: "6'30\"", memo: '새해 첫 러닝!' },
-      { date: '2025-01-10', km: '8.5', pace: "5'45\"", memo: '컨디션 좋음' },
-      { date: '2025-01-20', km: '21.1', pace: "5'10\"", memo: '하프 마라톤 완주!!' },
-      { date: '2025-02-07', km: '9.0', pace: "5'40\"", memo: '' },
-      { date: '2025-02-25', km: '20.0', pace: "5'10\"", memo: '대회 준비 20km' },
-      { date: '2025-03-10', km: '42.195', pace: "5'05\"", memo: '풀마라톤 완주!!!' },
-      { date: '2025-04-05', km: '6.5', pace: "5'50\"", memo: '' },
-      { date: '2025-05-14', km: '11.0', pace: "5'20\"", memo: '' },
-      { date: '2025-06-22', km: '7.0', pace: "5'45\"", memo: '여름 저녁 러닝' },
-      { date: '2025-07-08', km: '5.5', pace: "6'00\"", memo: '더위에도 완주' },
-      { date: '2025-08-19', km: '4.2', pace: "6'10\"", memo: '' },
-      { date: '2025-09-15', km: '15.0', pace: "5'15\"", memo: '가을 롱런' },
-      { date: '2025-10-06', km: '42.195', pace: "4'58\"", memo: '시즌 최고 기록!' },
-      { date: '2025-11-03', km: '10.0', pace: "5'30\"", memo: '' },
-      { date: '2025-12-31', km: '5.0', pace: "6'00\"", memo: '올해 마지막 러닝' },
-    ])
-    setAwards([
-      { name: '2025 서울 하프마라톤', result: '완주 (2:10:35)' },
-      { name: '2025 춘천 마라톤', result: '완주 (4:28:12)' },
-    ])
-  }
+  const addRow    = () => setRunRows(p => [...p, { date:'', km:'', pace:'', memo:'' }])
+  const removeRow = (i) => runRows.length > 1 && setRunRows(p => p.filter((_,idx) => idx !== i))
+  const updateRow = (i,k,v) => setRunRows(p => p.map((r,idx) => idx===i ? {...r,[k]:v} : r))
+  const addAward    = () => setAwards(p => [...p, { name:'', result:'' }])
+  const removeAward = (i) => awards.length > 1 && setAwards(p => p.filter((_,idx) => idx !== i))
+  const updateAward = (i,k,v) => setAwards(p => p.map((a,idx) => idx===i ? {...a,[k]:v} : a))
+
   return (
     <>
       <h2>주문서 작성</h2>
-      <button className="dummy-fill-btn" onClick={fillDummyData}>
-        📋 테스트 데이터로 채우기
-      </button>
-      <p className="modal-sub">배송지는 마이페이지에서 등록한 주소로 자동 설정됩니다.</p>
+      <button className="dummy-fill-btn" onClick={fillDummyData}>📋 테스트 데이터로 채우기</button>
 
-      {errors.length > 0 && <div className="form-errors">{errors.map((e,i)=><div key={i}>• {e}</div>)}</div>}
+      {errors.length > 0 && <div className="form-errors">{errors.map((e,i) => <div key={i}>• {e}</div>)}</div>}
 
       <div className="form-section-title">기본 정보</div>
       <div className="form-group" style={{marginBottom:12}}>
@@ -120,14 +123,33 @@ function StepForm({ onNext, user }) {
         </select>
       </div>
 
+      {/* 배송지 */}
+      <div className="form-section-title">배송지 <span className="required">*</span></div>
       <div className="shipping-info-box">
-        <div className="shipping-info-label">배송지</div>
-        {user?.address
-          ? <div className="shipping-info-addr">{user.postal_code && `[${user.postal_code}] `}{user.address} {user.address_detail}</div>
-          : <div className="shipping-info-warn">배송지 미등록 — <a href="/mypage" target="_blank">마이페이지</a>에서 등록해주세요</div>
-        }
+        <div className="shipping-info-label">선택된 배송지</div>
+        {selectedAddress ? (
+          <div className="shipping-info-addr">
+            [{selectedAddress.postal_code}] {selectedAddress.address1} {selectedAddress.address2}
+            <br/>
+            <span style={{fontSize:11,color:'rgba(255,255,255,0.35)'}}>
+              {selectedAddress.recipient_name} · {selectedAddress.recipient_phone}
+            </span>
+          </div>
+        ) : (
+          <div className="shipping-info-warn">배송지를 선택해주세요</div>
+        )}
+        <button className="addr-change-btn" onClick={() => setAddrModalOpen(true)}>
+          배송지 변경하기
+        </button>
       </div>
+      <AddressModal
+        isOpen={addrModalOpen}
+        onClose={() => setAddrModalOpen(false)}
+        onSelect={addr => setSelectedAddress(addr)}
+        selectedId={selectedAddress?.id}
+      />
 
+      {/* 러닝 기록 */}
       <div className="form-section-title">날짜별 러닝 기록 <span className="required">*</span></div>
       <div className="run-table-wrap">
         <table className="run-table">
@@ -147,6 +169,7 @@ function StepForm({ onNext, user }) {
       </div>
       <button className="add-row-btn" onClick={addRow}>+ 날짜 추가</button>
 
+      {/* 말 선택 */}
       <div className="form-section-title">보드판 말 선택 <span className="required">*</span></div>
       <div className="piece-selector">
         {PIECE_COLORS.map(p=>(
@@ -168,6 +191,7 @@ function StepForm({ onNext, user }) {
         </div>
       </div>
 
+      {/* 수상 경력 */}
       <div className="form-section-title">마라톤 수상 경력 (선택 — 부록 +3,000원)</div>
       {awards.map((a,i)=>(
         <div key={i} className="award-entry">
@@ -183,14 +207,13 @@ function StepForm({ onNext, user }) {
   )
 }
 
-// 단계 2: 제출서 확인
+// ── 단계 2: 제출서 확인 ──────────────────────────────────
 function StepConfirm({ formData, onBack, onBuild }) {
   const hasAppendix = formData.awards.some(a => a.name)
-  const totalPrice = BASE_PRICE + (hasAppendix ? APPENDIX_PRICE : 0)
-
+  const totalPrice  = BASE_PRICE + (hasAppendix ? APPENDIX_PRICE : 0)
   const grouped = {}
   formData.runRecords.forEach(r => {
-    const m = r.date.slice(0, 7)
+    const m = r.date.slice(0,7)
     if (!grouped[m]) grouped[m] = []
     grouped[m].push(r)
   })
@@ -205,6 +228,20 @@ function StepConfirm({ formData, onBack, onBuild }) {
         <div className="confirm-row"><span>책 제목</span><strong>{formData.bookTitle}</strong></div>
         <div className="confirm-row"><span>기록 년도</span><strong>{formData.recordYear}년</strong></div>
         <div className="confirm-row"><span>보드판 말</span><strong>{formData.selectedPiece}</strong></div>
+      </div>
+
+      <div className="confirm-section">
+        <div className="confirm-label">배송지</div>
+        <div className="confirm-row">
+          <span>주소</span>
+          <strong style={{fontSize:12}}>
+            [{formData.selectedAddress?.postal_code}] {formData.selectedAddress?.address1} {formData.selectedAddress?.address2}
+          </strong>
+        </div>
+        <div className="confirm-row">
+          <span>수령인</span>
+          <strong>{formData.selectedAddress?.recipient_name} · {formData.selectedAddress?.recipient_phone}</strong>
+        </div>
       </div>
 
       <div className="confirm-section">
@@ -237,7 +274,7 @@ function StepConfirm({ formData, onBack, onBuild }) {
 
       <div className="confirm-price-box">
         <div className="confirm-price-row"><span>기본 가격</span><strong>{BASE_PRICE.toLocaleString()}원</strong></div>
-        <div className="confirm-price-row"><span>부록</span><strong>{hasAppendix ? `+${APPENDIX_PRICE.toLocaleString()}원` : '미포함'}</strong></div>
+        <div className="confirm-price-row"><span>부록</span><strong>{hasAppendix?`+${APPENDIX_PRICE.toLocaleString()}원`:'미포함'}</strong></div>
         <div className="confirm-price-row total"><span>예상 결제 금액</span><strong>{totalPrice.toLocaleString()}원</strong></div>
       </div>
 
@@ -249,11 +286,10 @@ function StepConfirm({ formData, onBack, onBuild }) {
   )
 }
 
-// 단계 3: 로딩
+// ── 단계 3: 로딩 (SSE) ──────────────────────────────────
 function StepLoading({ formData, onDone }) {
-  const { authFetch } = useAuth()
   const [step, setStep] = useState('준비 중...')
-  const [pct, setPct] = useState(0)
+  const [pct,  setPct]  = useState(0)
   const [error, setError] = useState(null)
 
   useEffect(() => {
@@ -262,38 +298,26 @@ function StepLoading({ formData, onDone }) {
 
     fetch('/api/books/create-stream', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify(formData)
     }).then(async res => {
-      const reader = res.body.getReader()
+      const reader  = res.body.getReader()
       const decoder = new TextDecoder()
       let buf = ''
-
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
         buf += decoder.decode(value, { stream: true })
         const lines = buf.split('\n')
         buf = lines.pop()
-
         for (const line of lines) {
           if (!line.startsWith('data: ')) continue
           try {
             const msg = JSON.parse(line.slice(6))
             if (!isMounted) return
-
             if (msg.error) { setError(msg.error); return }
-            if (msg.step) { setStep(msg.step); setPct(msg.pct) }
-            if (msg.done) {
-              onDone({
-                result: msg.result,
-                price_info: msg.price_info,
-                formData,
-              })
-            }
+            if (msg.step)  { setStep(msg.step); setPct(msg.pct) }
+            if (msg.done)  { onDone({ result: msg.result, price_info: msg.price_info, formData }) }
           } catch {}
         }
       }
@@ -306,7 +330,6 @@ function StepLoading({ formData, onDone }) {
     <>
       <h2>책 생성 중...</h2>
       <p className="modal-sub">잠시만 기다려주세요. 약 1~2분 소요됩니다.</p>
-
       <div className="loading-step">{step}</div>
       <div className="loading-bar-wrap">
         <div className="loading-bar-track">
@@ -314,17 +337,12 @@ function StepLoading({ formData, onDone }) {
         </div>
         <div className="loading-pct">{pct}%</div>
       </div>
-
-      {error && (
-        <div className="form-errors" style={{marginTop:24}}>
-          오류 발생: {error}
-        </div>
-      )}
+      {error && <div className="form-errors" style={{marginTop:24}}>오류 발생: {error}</div>}
     </>
   )
 }
 
-// 단계 4: 완료 + 가격 확인
+// ── 단계 4: 완료 + 가격 확인 ──────────────────────────────
 function StepComplete({ data, onCancel, onOrder }) {
   const { result, price_info, formData } = data
   const { authFetch } = useAuth()
@@ -332,18 +350,14 @@ function StepComplete({ data, onCancel, onOrder }) {
   const [enlarged, setEnlarged] = useState(false)
   const [estimate, setEstimate] = useState(null)
   const [estimateLoading, setEstimateLoading] = useState(true)
-  const [estimateError, setEstimateError] = useState(null)
+  const [estimateError, setEstimateError]  = useState(null)
 
-  // 컴포넌트 마운트 시 Sweetbook estimate API 호출
   useEffect(() => {
     const fetchEstimate = async () => {
       try {
-        const res = await authFetch('/api/orders/estimate', {
+        const res  = await authFetch('/api/orders/estimate', {
           method: 'POST',
-          body: JSON.stringify({
-            bookUid: result.book_uid,
-            quantity: 1,
-          })
+          body: JSON.stringify({ bookUid: result.book_uid, quantity: 1 })
         })
         const json = await res.json()
         if (json.success) setEstimate(json.data)
@@ -368,7 +382,6 @@ function StepComplete({ data, onCancel, onOrder }) {
       <h2>책 생성 완료!</h2>
       <p className="modal-sub">아래 내용을 확인 후 최종 주문해주세요.</p>
 
-      {/* Sweetbook 실제 견적 */}
       <div className="confirm-price-box" style={{marginBottom:20}}>
         <div className="estimate-source">Sweetbook API 실제 견적</div>
         {estimateLoading ? (
@@ -376,51 +389,40 @@ function StepComplete({ data, onCancel, onOrder }) {
         ) : estimateError ? (
           <>
             <div className="confirm-price-row"><span>기본 가격</span><strong>{price_info.base_price.toLocaleString()}원</strong></div>
-            <div className="confirm-price-row">
-              <span>부록</span>
-              <strong>{price_info.has_appendix ? `+${price_info.appendix_price.toLocaleString()}원` : '미포함'}</strong>
-            </div>
-            <div className="confirm-price-row total">
-              <span>예상 결제 금액</span>
-              <strong>{price_info.total_price.toLocaleString()}원</strong>
-            </div>
+            <div className="confirm-price-row"><span>부록</span><strong>{price_info.has_appendix?`+${price_info.appendix_price.toLocaleString()}원`:'미포함'}</strong></div>
+            <div className="confirm-price-row total"><span>예상 결제 금액</span><strong>{price_info.total_price.toLocaleString()}원</strong></div>
           </>
         ) : (
           <>
             <div className="confirm-price-row"><span>상품 금액</span><strong>{estimate.productAmount.toLocaleString()}원</strong></div>
             <div className="confirm-price-row"><span>배송비</span><strong>{estimate.shippingFee.toLocaleString()}원</strong></div>
             <div className="confirm-price-row"><span>포장비</span><strong>{estimate.packagingFee.toLocaleString()}원</strong></div>
-            <div className="confirm-price-row total">
-              <span>최종 결제 금액</span>
-              <strong>{estimate.totalAmount.toLocaleString()}원</strong>
-            </div>
-            <div className={`estimate-credit ${estimate.creditSufficient ? 'ok' : 'warn'}`}>
+            <div className="confirm-price-row total"><span>최종 결제 금액</span><strong>{estimate.totalAmount.toLocaleString()}원</strong></div>
+            <div className={`estimate-credit ${estimate.creditSufficient?'ok':'warn'}`}>
               충전금 잔액 {estimate.creditBalance.toLocaleString()}원
-              {estimate.creditSufficient ? ' ✓ 결제 가능' : ' ✗ 충전금 부족'}
+              {estimate.creditSufficient?' ✓ 결제 가능':' ✗ 충전금 부족'}
             </div>
           </>
         )}
       </div>
 
-      {/* 미리보기 이미지 */}
       {result?.preview_b64 && (
         <div className="preview-image-wrap">
           <div className="preview-image-header">
             <div className="preview-image-label">보드판 미리보기</div>
             <div className="preview-image-notice">⚠ 예시 이미지로 실제와 다를 수 있습니다</div>
           </div>
-          <div className="preview-image-container" onClick={() => setEnlarged(true)}>
+          <div className="preview-image-container" onClick={()=>setEnlarged(true)}>
             <img src={result.preview_b64} alt="보드판 미리보기" className="preview-image"/>
             <div className="preview-zoom-hint">🔍 클릭하여 확대</div>
           </div>
         </div>
       )}
 
-      {/* 확대 오버레이 */}
       {enlarged && (
-        <div className="preview-enlarged-overlay" onClick={() => setEnlarged(false)}>
-          <div className="preview-enlarged-inner" onClick={e => e.stopPropagation()}>
-            <button className="preview-enlarged-close" onClick={() => setEnlarged(false)}>✕</button>
+        <div className="preview-enlarged-overlay" onClick={()=>setEnlarged(false)}>
+          <div className="preview-enlarged-inner" onClick={e=>e.stopPropagation()}>
+            <button className="preview-enlarged-close" onClick={()=>setEnlarged(false)}>✕</button>
             <div className="preview-enlarged-notice">⚠ 예시 이미지로 실제와 다를 수 있습니다</div>
             <img src={result.preview_b64} alt="보드판 미리보기 확대"/>
           </div>
@@ -433,33 +435,27 @@ function StepComplete({ data, onCancel, onOrder }) {
 
       <div className="confirm-btns">
         <button className="btn-back" onClick={onCancel}>취소하기</button>
-        <button
-          className="btn-build"
-          onClick={handleOrder}
-          disabled={ordering || (!estimate?.creditSufficient && !estimateLoading)}
-        >
-          {ordering ? '주문 처리 중...' : '주문하기 →'}
+        <button className="btn-build" onClick={handleOrder}
+          disabled={ordering || (!estimate?.creditSufficient && !estimateLoading)}>
+          {ordering?'주문 처리 중...':'주문하기 →'}
         </button>
       </div>
     </>
   )
 }
 
-// 메인 모달
+// ── 메인 모달 ──────────────────────────────────────────
 export default function OrderModal({ isOpen, onClose }) {
   const { user, authFetch } = useAuth()
   const navigate = useNavigate()
-  const [step, setStep] = useState('form') // form | confirm | loading | complete
+  const [step, setStep] = useState('form')
   const [formData, setFormData] = useState(null)
   const [completeData, setCompleteData] = useState(null)
 
   if (!isOpen) return null
 
   const handleClose = () => {
-    setStep('form')
-    setFormData(null)
-    setCompleteData(null)
-    onClose()
+    setStep('form'); setFormData(null); setCompleteData(null); onClose()
   }
 
   const handleOrder = async () => {
@@ -472,16 +468,14 @@ export default function OrderModal({ isOpen, onClose }) {
           recordYear:  completeData.formData.recordYear,
           totalPrice:  completeData.price_info.total_price,
           hasAppendix: completeData.price_info.has_appendix,
+          addressId:   completeData.formData.selectedAddress?.id,
         })
       })
       const data = await res.json()
       if (!data.success) throw new Error(data.detail)
       handleClose()
       navigate('/order-complete', {
-        state: {
-          priceInfo:  completeData.price_info,
-          bookTitle:  completeData.formData.bookTitle,
-        }
+        state: { priceInfo: completeData.price_info, bookTitle: completeData.formData.bookTitle }
       })
     } catch (e) {
       alert('주문 중 오류: ' + e.message)
@@ -492,33 +486,10 @@ export default function OrderModal({ isOpen, onClose }) {
     <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&handleClose()}>
       <div className="modal">
         {step !== 'loading' && <button className="modal-close" onClick={handleClose}>✕</button>}
-
-        {step === 'form' && (
-          <StepForm
-            user={user}
-            onNext={data => { setFormData(data); setStep('confirm') }}
-          />
-        )}
-        {step === 'confirm' && (
-          <StepConfirm
-            formData={formData}
-            onBack={() => setStep('form')}
-            onBuild={() => setStep('loading')}
-          />
-        )}
-        {step === 'loading' && (
-          <StepLoading
-            formData={formData}
-            onDone={data => { setCompleteData(data); setStep('complete') }}
-          />
-        )}
-        {step === 'complete' && (
-          <StepComplete
-            data={completeData}
-            onCancel={handleClose}
-            onOrder={handleOrder}
-          />
-        )}
+        {step === 'form' && <StepForm user={user} onNext={d=>{setFormData(d);setStep('confirm')}}/>}
+        {step === 'confirm' && <StepConfirm formData={formData} onBack={()=>setStep('form')} onBuild={()=>setStep('loading')}/>}
+        {step === 'loading' && <StepLoading formData={formData} onDone={d=>{setCompleteData(d);setStep('complete')}}/>}
+        {step === 'complete' && <StepComplete data={completeData} onCancel={handleClose} onOrder={handleOrder}/>}
       </div>
     </div>
   )

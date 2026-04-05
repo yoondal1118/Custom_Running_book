@@ -6,7 +6,8 @@ import requests
 import base64
 from dotenv import load_dotenv
 from services.board_renderer import (
-    render_board_page, render_stats_page, render_cover_page, get_grade
+    render_board_page, render_stats_page, render_cover_page,
+    render_appendix_page, get_grade
 )
 
 load_dotenv()
@@ -194,7 +195,10 @@ async def create_running_book(order_data: dict, progress=None) -> dict:
         # 5. 부록
         if has_appendix:
             await report("부록 페이지 생성 중...", 92)
-            add_content_page(book_uid, [], "수상 경력")
+            appendix_path = os.path.join(tmpdir, "appendix.png")
+            await asyncio.to_thread(render_appendix_page, awards, book_title, appendix_path)
+            appendix_file = upload_photo(book_uid, appendix_path)
+            add_content_page(book_uid, [appendix_file], "수상 경력")
             await report("부록 완료", 94)
 
         # 6. 최종화

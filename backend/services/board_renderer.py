@@ -403,3 +403,50 @@ h1 em{{color:#E8632A;font-style:normal;}}
 <div class="deco">MY RUNNING JOURNAL</div>
 </body></html>"""
     html_to_png(html, output_path, width=1200, height=1600)
+
+
+def build_appendix_html(awards: list, book_title: str) -> str:
+    awards_html = ""
+    medals = ["🥇", "🥈", "🥉", "🏅", "🏅", "🏅"]
+    for i, a in enumerate(awards[:6]):
+        medal = medals[i] if i < len(medals) else "🏅"
+        awards_html += f"""
+        <div class="award-item">
+          <div class="award-medal">{medal}</div>
+          <div class="award-info">
+            <div class="award-name">{a.get('name', '')}</div>
+            <div class="award-result">{a.get('result', '')}</div>
+          </div>
+        </div>"""
+
+    return f"""<!DOCTYPE html>
+<html><head><meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+*{{margin:0;padding:0;box-sizing:border-box;}}
+body{{width:978px;height:845px;background:#1B2A4A;font-family:'Noto Sans KR',sans-serif;
+  padding:60px 56px;overflow:hidden;}}
+.eyebrow{{font-size:11px;color:rgba(255,255,255,0.25);letter-spacing:4px;margin-bottom:14px;}}
+.title{{font-size:40px;font-weight:700;color:#fff;margin-bottom:6px;}}
+.title em{{color:#E8632A;font-style:normal;}}
+.sub{{font-size:13px;color:rgba(255,255,255,0.3);margin-bottom:40px;font-weight:300;}}
+.divider{{width:40px;height:3px;background:#E8632A;margin-bottom:32px;}}
+.award-item{{display:flex;align-items:center;gap:20px;
+  background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);
+  border-radius:10px;padding:20px 24px;margin-bottom:14px;}}
+.award-medal{{font-size:36px;}}
+.award-name{{font-size:16px;font-weight:500;color:#fff;margin-bottom:4px;}}
+.award-result{{font-size:13px;color:rgba(255,255,255,0.5);font-weight:300;}}
+</style></head>
+<body>
+<div class="eyebrow">APPENDIX</div>
+<div class="title">수상 <em>경력</em></div>
+<div class="sub">{book_title}</div>
+<div class="divider"></div>
+{awards_html}
+</body></html>"""
+
+
+def render_appendix_page(awards: list, book_title: str, output_path: str):
+    html = build_appendix_html(awards, book_title)
+    html_to_png(html, output_path, width=978, height=845)
