@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext'
 import './AddressModal.css'
 
 export default function AddressModal({ isOpen, onClose, onSelect, selectedId }) {
-  const { authFetch } = useAuth()
+  const { authFetch, user } = useAuth()
   const [addresses, setAddresses] = useState([])
   const [loading, setLoading] = useState(true)
   const [checkedId, setCheckedId] = useState(selectedId || null)
@@ -20,8 +20,28 @@ export default function AddressModal({ isOpen, onClose, onSelect, selectedId }) 
       setShowAddForm(false)
       setAddMsg('')
       fetchAddresses()
+
+      if (user) {
+        const defaultAddr = user.addresse?.find(a => a.is_default)
+        if (defaultAddr) {
+            setAddForm({
+                recipient_name: defaultAddr.recipient_name || '',
+                recipient_phone: defaultAddr.recipient_phone || '',
+                postal_code: defaultAddr.postal_code || '',
+                address1: defaultAddr.address1 || '',
+                address2: defaultAddr.address2 || '',
+                is_default: false
+            })
+        } else {
+            setAddForm(prev => ({
+                ...prev,
+                recipient_name : user.name || '',
+                recipient_phone : user.phone || ''
+            }))
+        }
+      }
     }
-  }, [isOpen, selectedId])
+  }, [isOpen, selectedId, user])
 
   const fetchAddresses = async () => {
     setLoading(true)
@@ -39,7 +59,7 @@ export default function AddressModal({ isOpen, onClose, onSelect, selectedId }) 
     } catch (e) { console.error(e) }
     finally { setLoading(false) }
   }
-
+  
   const handleAddSubmit = async () => {
     if (!addForm.recipient_name || !addForm.address1 || !addForm.postal_code) {
       setAddMsg('수령인, 우편번호, 주소는 필수입니다')
