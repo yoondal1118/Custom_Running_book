@@ -1,7 +1,0 @@
-fastapi
-uvicorn
-python-dotenv
-requests
-sqlalchemy
-passlib[bcrypt]
-python-jose[cryptography]
