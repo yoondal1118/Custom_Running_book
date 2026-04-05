@@ -25,7 +25,7 @@ export default function SignupPage() {
   const update = (k, v) => setForm(p => ({ ...p, [k]: v }))
 
   const handleSubmit = async () => {
-    if (!form.username || !form.name || !form.email || !form.password) {
+    if (!form.username || !form.name || !form.email || !form.password || !form.phone) {
       setError('필수 항목을 모두 입력해주세요'); return
     }
     if (form.password.length < 8) {
@@ -68,7 +68,7 @@ export default function SignupPage() {
           <Field label="비밀번호"    name="password"         type="password" placeholder="8자 이상"     required value={form.password}         onChange={update}/>
           <Field label="비밀번호 확인" name="password_confirm" type="password" placeholder="비밀번호 재입력" required value={form.password_confirm} onChange={update}/>
         </div>
-        <Field label="연락처" name="phone" placeholder="010-0000-0000" value={form.phone} onChange={update}/>
+        <Field label="연락처" name="phone" placeholder="010-0000-0000" required value={form.phone} onChange={update}/>
 
         <div className="auth-section-title">
           기본 배송지 등록
