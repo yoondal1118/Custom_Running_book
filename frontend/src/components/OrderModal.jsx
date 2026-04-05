@@ -351,6 +351,8 @@ function StepComplete({ data, onCancel, onOrder }) {
   const [estimate, setEstimate] = useState(null)
   const [estimateLoading, setEstimateLoading] = useState(true)
   const [estimateError, setEstimateError]  = useState(null)
+  const hasAppendix = formData.awards.some(a => a.name)
+  const totalPrice  = BASE_PRICE + (hasAppendix ? APPENDIX_PRICE : 0)
 
   useEffect(() => {
     const fetchEstimate = async () => {
@@ -383,7 +385,6 @@ function StepComplete({ data, onCancel, onOrder }) {
       <p className="modal-sub">아래 내용을 확인 후 최종 주문해주세요.</p>
 
       <div className="confirm-price-box" style={{marginBottom:20}}>
-        <div className="estimate-source">Sweetbook API 실제 견적</div>
         {estimateLoading ? (
           <div className="estimate-loading">금액 조회 중...</div>
         ) : estimateError ? (
@@ -394,14 +395,9 @@ function StepComplete({ data, onCancel, onOrder }) {
           </>
         ) : (
           <>
-            <div className="confirm-price-row"><span>상품 금액</span><strong>{estimate.productAmount.toLocaleString()}원</strong></div>
-            <div className="confirm-price-row"><span>배송비</span><strong>{estimate.shippingFee.toLocaleString()}원</strong></div>
-            <div className="confirm-price-row"><span>포장비</span><strong>{estimate.packagingFee.toLocaleString()}원</strong></div>
-            <div className="confirm-price-row total"><span>최종 결제 금액</span><strong>{estimate.totalAmount.toLocaleString()}원</strong></div>
-            <div className={`estimate-credit ${estimate.creditSufficient?'ok':'warn'}`}>
-              충전금 잔액 {estimate.creditBalance.toLocaleString()}원
-              {estimate.creditSufficient?' ✓ 결제 가능':' ✗ 충전금 부족'}
-            </div>
+            <div className="confirm-price-row"><span>기본 가격</span><strong>{BASE_PRICE.toLocaleString()}원</strong></div>
+            <div className="confirm-price-row"><span>부록</span><strong>{hasAppendix?`+${APPENDIX_PRICE.toLocaleString()}원`:'미포함'}</strong></div>
+            <div className="confirm-price-row total"><span>최종 결제 금액</span><strong>{totalPrice.toLocaleString()}원</strong></div>
           </>
         )}
       </div>
