@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
 import './AuthPage.css'
 
 function Field({ label, name, type='text', placeholder, required, value, onChange }) {
@@ -14,7 +13,6 @@ function Field({ label, name, type='text', placeholder, required, value, onChang
 }
 
 export default function SignupPage() {
-  const { login } = useAuth()
   const navigate  = useNavigate()
   const [form, setForm] = useState({
     username: '', name: '', email: '',
@@ -30,6 +28,9 @@ export default function SignupPage() {
     if (!form.username || !form.name || !form.email || !form.password) {
       setError('필수 항목을 모두 입력해주세요'); return
     }
+    if (form.password.length < 8) {
+      setError('비밀번호는 8자리 이상이어야 합니다'); return
+    }
     if (form.password !== form.password_confirm) {
       setError('비밀번호가 일치하지 않습니다'); return
     }
@@ -42,8 +43,7 @@ export default function SignupPage() {
       })
       const data = await res.json()
       if (!data.success) throw new Error(data.detail)
-      login(data.data.token, data.data.user)
-      navigate('/')
+      navigate('/login')
     } catch (e) {
       setError(e.message || '회원가입에 실패했습니다')
     } finally {
