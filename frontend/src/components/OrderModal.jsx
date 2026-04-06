@@ -34,7 +34,6 @@ function StepForm({ onNext, user }) {
   const [awards, setAwards] = useState([{ name: '', result: '' }])
   const [bookTitle, setBookTitle] = useState('')
   const [errors, setErrors] = useState([])
-  const [customPieceUrl, setCustomPieceUrl] = useState(null)
   const [selectedAddress, setSelectedAddress] = useState(user?.default_address || null)
   const [addrModalOpen, setAddrModalOpen] = useState(false)
 
@@ -181,15 +180,6 @@ function StepForm({ onNext, user }) {
             <div className="piece-name">{p.label}</div>
           </div>
         ))}
-        <div>
-          <div className={`piece-upload${selectedPiece==='custom'?' selected':''}`}
-            onClick={()=>document.getElementById('customPieceInput').click()}
-            style={customPieceUrl?{backgroundImage:`url(${customPieceUrl})`,backgroundSize:'cover'}:{}}>
-            {!customPieceUrl&&<><div className="upload-plus">+</div><div className="piece-upload-text">이미지<br/>업로드</div></>}
-          </div>
-          <input type="file" id="customPieceInput" accept="image/*" style={{display:'none'}} onChange={e=>{const f=e.target.files[0];if(f){setCustomPieceUrl(URL.createObjectURL(f));setSelectedPiece('custom')}}}/>
-          <div className="piece-name">커스텀</div>
-        </div>
       </div>
 
       {/* 수상 경력 */}

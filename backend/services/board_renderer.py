@@ -13,6 +13,14 @@ GRADE = {
     "none":   {"bg": "rgba(255,255,255,0.15)", "border": "rgba(255,255,255,0.25)", "text": "rgba(255,255,255,0.5)", "label": ""},
 }
 
+# 보드판 말 색상 (프론트엔드 PIECE_COLORS와 동일)
+PIECE_COLORS = {
+    "blue":   {"fill": "#1E4FA3", "light": "#4A7DD4"},
+    "pink":   {"fill": "#C94075", "light": "#E07099"},
+    "yellow": {"fill": "#D4A017", "light": "#EEC04A"},
+    "green":  {"fill": "#2D6A3F", "light": "#5A9E6E"},
+}
+
 def get_grade(km: float) -> str:
     if km <= 0:    return "none"
     elif km < 5:   return "bronze"
@@ -28,7 +36,7 @@ def html_to_png(html: str, output_path: str, width: int = CANVAS_W, height: int 
         page.screenshot(path=output_path, clip={"x": 0, "y": 0, "width": width, "height": height})
         browser.close()
 
-def build_board_html(year: int, month: int, day_map: dict, book_title: str) -> str:
+def build_board_html(year: int, month: int, day_map: dict, book_title: str, piece_color: str = "blue") -> str:
     days_in_month = calendar.monthrange(year, month)[1]
     total_km = round(sum(float(r.get("km", 0)) for r in day_map.values()), 1)
     medal_counts = {"gold": 0, "silver": 0, "bronze": 0}
@@ -99,6 +107,10 @@ def build_board_html(year: int, month: int, day_map: dict, book_title: str) -> s
     # 셀 HTML 생성
     cells_html = ""
 
+    # 말의 색상 결정
+    piece_fill = PIECE_COLORS.get(piece_color, PIECE_COLORS["blue"])["fill"]
+    piece_light = PIECE_COLORS.get(piece_color, PIECE_COLORS["blue"])["light"]
+
     # Start 칸
     start_cx = PAD_L // 2
     start_cy = PAD_T + cell_h // 2
@@ -110,9 +122,9 @@ def build_board_html(year: int, month: int, day_map: dict, book_title: str) -> s
       fill="#fff" font-size="14" font-weight="bold" font-family="Noto Sans KR">Start</text>
     <!-- 말 -->
     <ellipse cx="{start_cx}" cy="{start_cy + start_r - 8}" rx="10" ry="5" fill="rgba(0,0,0,0.3)"/>
-    <rect x="{start_cx - 6}" y="{start_cy - start_r + 2}" width="12" height="20" rx="6" fill="#E8632A"/>
-    <circle cx="{start_cx}" cy="{start_cy - start_r - 8}" r="9" fill="#E8632A"/>
-    <circle cx="{start_cx}" cy="{start_cy - start_r - 8}" r="5" fill="#F5A06B"/>
+    <rect x="{start_cx - 6}" y="{start_cy - start_r + 2}" width="12" height="20" rx="6" fill="{piece_fill}"/>
+    <circle cx="{start_cx}" cy="{start_cy - start_r - 8}" r="9" fill="{piece_fill}"/>
+    <circle cx="{start_cx}" cy="{start_cy - start_r - 8}" r="5" fill="{piece_light}"/>
     '''
 
     # 날짜 칸
@@ -284,8 +296,8 @@ body{{width:{CANVAS_W}px;height:{CANVAS_H}px;overflow:hidden;background:#1B2A4A;
     return html
 
 
-def render_board_page(year: int, month: int, day_map: dict, book_title: str, output_path: str):
-    html = build_board_html(year, month, day_map, book_title)
+def render_board_page(year: int, month: int, day_map: dict, book_title: str, output_path: str, piece_color: str = "blue"):
+    html = build_board_html(year, month, day_map, book_title, piece_color)
     html_to_png(html, output_path, width=CANVAS_W, height=CANVAS_H)
 
 

@@ -110,6 +110,7 @@ async def create_running_book(order_data: dict, progress=None) -> dict:
     run_records  = order_data.get("runRecords", [])
     book_title   = order_data.get("bookTitle") or "나의 러닝일지"
     record_year  = int(order_data.get("recordYear", 2024))
+    selected_piece = order_data.get("selectedPiece", "blue")
     awards       = [a for a in order_data.get("awards", []) if a.get("name")]
     has_appendix = len(awards) > 0
 
@@ -174,7 +175,7 @@ async def create_running_book(order_data: dict, progress=None) -> dict:
             day_map = {int(r["date"].split("-")[2]): r for r in records}
 
             board_path = os.path.join(tmpdir, f"board_{month:02d}.png")
-            await asyncio.to_thread(render_board_page, record_year, month, day_map, book_title, board_path)
+            await asyncio.to_thread(render_board_page, record_year, month, day_map, book_title, board_path, selected_piece)
 
             # 보드판 전체(2페이지 펼침) 미리보기로 수집
             preview_pages.append({"label": f"{month}월", "b64": image_to_base64(board_path)})

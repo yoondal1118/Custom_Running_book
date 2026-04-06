@@ -95,8 +95,8 @@ const pages = [
     preview: <MiniBoard />
   },
   {
-    num: '04', title: '부록 — 수상 & 사진', bg: 'appendix-bg',
-    desc: '마라톤 수상 경력과 특별한 러닝 사진을 담은 기념 부록 (+3,000원)',
+    num: '04', title: '부록 — 수상', bg: 'appendix-bg',
+    desc: '마라톤 수상 경력을 담은 기념 부록 (+3,000원)',
     preview: <MiniAppendix />
   },
 ]
