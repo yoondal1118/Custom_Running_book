@@ -40,7 +40,7 @@
 ### 1단계: 환경 설정
 
 #### 사전 요구사항
-- Python 3.10 이상
+- Python 3.11
 - Node.js 14 이상
 - npm 또는 yarn
 
@@ -54,7 +54,7 @@ cd Custom_Running_book
 
 **Python 가상 환경 생성:**
 ```bash
-python -m venv venv
+python3.11 -m venv venv
 # Windows
 venv\Scripts\activate
 # Mac/Linux
@@ -110,6 +110,7 @@ INFO:     Application startup complete
 
 ```bash
 cd frontend
+npm install (초기 세팅 시 필요)
 npm run dev
 ```
 
