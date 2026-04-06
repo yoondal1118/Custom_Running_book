@@ -61,6 +61,7 @@ export default function SignupPage() {
       })
       const data = await res.json()
       if (!data.success) throw new Error(data.detail)
+      alert("회원가입에 성공하였습니다. 로그인 후 이용해주세요")
       navigate('/login')
     } catch (e) {
       setError(e.message || '회원가입에 실패했습니다')
