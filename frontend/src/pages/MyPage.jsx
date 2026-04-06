@@ -26,6 +26,11 @@ export default function MyPage() {
   const [infoMsg, setInfoMsg]   = useState('')
   const [infoError, setInfoError] = useState('')
 
+  // 비밀번호 확인 모달
+  const [passwordModal, setPasswordModal] = useState(false)
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [passwordVerifying, setPasswordVerifying] = useState(false)
+
   // 기본 배송지 관리
   const [addrModalOpen, setAddrModalOpen] = useState(false)
 
@@ -80,20 +85,42 @@ export default function MyPage() {
       setInfoError('비밀번호가 일치하지 않습니다'); return
     }
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$~!%*?&])[A-Za-z\d@$~!%*?&]{8,20}$/;
-    if (!passwordRegex.test(infoForm.password)) {
+    if (infoForm.password && !passwordRegex.test(infoForm.password)) {
       setInfoError('비밀번호는 영문과 숫자, 특수문자(@$~!%*?&)를 포함하여 8~20자여야 합니다');
       return;
     }
+    // 비밀번호 확인 모달 띄우기
+    setPasswordModal(true)
+    setCurrentPassword('')
+  }
+
+  // 비밀번호 확인 후 정보 저장
+  const handleConfirmPassword = async () => {
+    if (!currentPassword.trim()) {
+      setInfoError('현재 비밀번호를 입력해주세요')
+      return
+    }
+    setPasswordVerifying(true)
     try {
-      const body = { email: infoForm.email, phone: infoForm.phone }
-      if (infoForm.password) { body.password = infoForm.password; body.password_confirm = infoForm.password_confirm }
+      const body = { 
+        email: infoForm.email, 
+        phone: infoForm.phone,
+        current_password: currentPassword
+      }
+      if (infoForm.password) { 
+        body.password = infoForm.password
+        body.password_confirm = infoForm.password_confirm 
+      }
       const res  = await authFetch('/api/auth/me', { method: 'PATCH', body: JSON.stringify(body) })
       const data = await res.json()
       if (!data.success) { setInfoError(`저장 실패: ${data.detail}`); return }
       setUser(data.data)
       setInfoMsg('정보가 저장되었습니다')
       setInfoForm(p => ({ ...p, password:'', password_confirm:'' }))
+      setPasswordModal(false)
+      setCurrentPassword('')
     } catch (e) { setInfoError('저장 중 오류: ' + e.message) }
+    finally { setPasswordVerifying(false) }
   }
 
   const statusLabel = s => s === 'cancelled' ? '취소됨' : '결제완료'
@@ -215,6 +242,29 @@ export default function MyPage() {
             <div className="cancel-modal-btns">
               <button className="cancel-modal-back" onClick={()=>setCancelModal(null)}>돌아가기</button>
               <button className="cancel-modal-confirm" onClick={handleCancelSubmit}>취소 확인</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 비밀번호 확인 모달 */}
+      {passwordModal && (
+        <div className="cancel-overlay" onClick={e=>e.target===e.currentTarget&&setPasswordModal(false)}>
+          <div className="cancel-modal">
+            <h3>정보 변경 확인</h3>
+            <p>현재 비밀번호를 입력해주세요</p>
+            <input 
+              type="password" 
+              placeholder="현재 비밀번호" 
+              value={currentPassword}
+              onChange={e=>setCurrentPassword(e.target.value)}
+              onKeyPress={e=>e.key==='Enter'&&!passwordVerifying&&handleConfirmPassword()}
+            />
+            <div className="cancel-modal-btns">
+              <button className="cancel-modal-back" onClick={()=>setPasswordModal(false)} disabled={passwordVerifying}>취소</button>
+              <button className="cancel-modal-confirm" onClick={handleConfirmPassword} disabled={passwordVerifying}>
+                {passwordVerifying ? '확인 중...' : '확인'}
+              </button>
             </div>
           </div>
         </div>

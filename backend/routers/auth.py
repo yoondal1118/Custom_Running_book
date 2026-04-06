@@ -27,10 +27,11 @@ class LoginRequest(BaseModel):
     password: str
 
 class UpdateUserRequest(BaseModel):
-    email:            Optional[str] = None
-    password:         Optional[str] = None
-    password_confirm: Optional[str] = None
-    phone:            Optional[str] = None
+    email:              Optional[str] = None
+    password:           Optional[str] = None
+    password_confirm:   Optional[str] = None
+    phone:              Optional[str] = None
+    current_password:   Optional[str] = None  # 비밀번호 검증용
 
 def _user_dict(user: models.User, db: Session) -> dict:
     default_addr = db.query(models.Address).filter(
@@ -124,6 +125,14 @@ def update_me(
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    # 비밀번호나 이메일을 변경하려면 현재 비밀번호 검증 필요
+    if (req.email or req.password) and not req.current_password:
+        raise HTTPException(status_code=400, detail="현재 비밀번호를 입력해주세요")
+    
+    if req.current_password:
+        if not verify_password(req.current_password, current_user.hashed_password):
+            raise HTTPException(status_code=401, detail="비밀번호가 올바르지 않습니다")
+
     if req.email:
         existing = db.query(models.User).filter(
             models.User.email == req.email,

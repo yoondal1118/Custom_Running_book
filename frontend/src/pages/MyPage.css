@@ -146,17 +146,33 @@
   font-family: 'Noto Sans KR', sans-serif; outline: none; resize: none;
 }
 .cancel-modal textarea:focus { border-color: var(--orange); }
+.cancel-modal input {
+  width: 100%; background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #fff; padding: 12px 14px; font-size: 13px;
+  font-family: 'Noto Sans KR', sans-serif; outline: none;
+  margin-bottom: 16px;
+}
+.cancel-modal input:focus { border-color: var(--orange); }
 .cancel-modal-btns { display: flex; gap: 10px; margin-top: 16px; }
 .cancel-modal-back {
   flex: 1; background: transparent;
   border: 1px solid rgba(255,255,255,0.15);
   color: rgba(255,255,255,0.5); font-size: 14px; padding: 12px;
   cursor: pointer; font-family: 'Noto Sans KR', sans-serif;
+  transition: all 0.2s;
+}
+.cancel-modal-back:disabled {
+  opacity: 0.5; cursor: not-allowed;
 }
 .cancel-modal-confirm {
   flex: 1; background: #E24B4A; color: #fff;
   border: none; font-family: 'Black Han Sans', sans-serif;
   font-size: 16px; padding: 12px; cursor: pointer;
+  transition: all 0.2s;
+}
+.cancel-modal-confirm:disabled {
+  opacity: 0.7; cursor: not-allowed;
 }
 
 @media (max-width: 768px) {
