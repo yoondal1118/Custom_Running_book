@@ -163,7 +163,7 @@ VITE v4.x.x  ready in xxx ms
 #### **직접 API 호출 (HTTP 요청)**
 
 | 메서드 | 엔드포인트 | 기능 |
-|--------|-----------|------|---------|
+|--------|-----------|------|
 | **POST** | `/books` | 책 초안 생성 |
 | **POST** | `/books/{bookUid}/photos` | 사진 업로드 |
 | **POST** | `/books/{bookUid}/cover` | 커버 추가 |
