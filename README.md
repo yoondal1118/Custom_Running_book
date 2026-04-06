@@ -19,7 +19,22 @@
 이렇게 만들어진 책은 당신의 노력이 담긴 소중한 추억이 됩니다.
 
 ---
+## 🛠️ 기술 스택
 
+### 백엔드
+- **Framework**: FastAPI (Python 3.10+)
+- **Database**: SQLite (로컬 개발용)
+- **ORM**: SQLAlchemy
+- **인증**: JWT (PyJWT, python-jose)
+- **외부 API**: BOOKPRINT_API + [BookPrintAPI Python SDK](../bookprintapi/) (포토북 제작 및 주문)
+
+### 프론트엔드
+- **Framework**: React 18
+- **빌드 도구**: Vite
+- **상태 관리**: Context API
+- **스타일**: CSS3
+
+---
 ## 🚀 빠른 시작
 
 ### 1단계: 환경 설정
@@ -119,27 +134,15 @@ VITE v4.x.x  ready in xxx ms
 | 1️⃣ **회원가입** | 사용자명, 이메일, 비밀번호로 계정 생성 | 자체 구현 (JWT 인증) |
 | 2️⃣ **로그인** | JWT 토큰 발급 (로그인 필수) | 자체 구현 |
 | 3️⃣ **러닝 기록 입력** | 달력 UI에서 날짜별 러닝 기록, 수상 기록 입력 | 자체 구현 (프론트엔드) |
-| 4️⃣ **책 생성** | 입력된 기록으로 포토북 생성<br>(초안 → 표지 → 페이지 → 확정) | **스위트북 API 사용**<br>(`books.create`, `covers.create`,<br>`contents.insert`, `books.finalize`) |
-| 5️⃣ **미리보기** | 생성된 책의 예상 가격 표시 | **스위트북 API**<br>(`orders.estimate`) |
+| 4️⃣ **책 생성** | 입력된 기록으로 포토북 생성<br>(초안 → 표지 → 페이지 → 확정) | **BOOKPRINT_API 사용**<br>(`/books`, `/books/{bookUid}/photos`,<br>`/books/{bookUid}/cover`, `/books/{book_uid}/contents`, `/books/{book_uid}/finalization`) |
+| 5️⃣ **미리보기** | 생성된 책의 예상 가격 표시 | **BOOKPRINT_API SDK 사용**<br>(`orders.estimate`) |
 | 6️⃣ **배송지 입력** | 배송지 선택 또는 신규 등록 | 자체 구현 (사용자별 관리) |
-| 7️⃣ **주문 생성** | 확정된 책으로 최종 주문 | **스위트북 API**<br>(`orders.create`) |
-| 8️⃣ **주문 추적** | 마이페이지에서 주문 상태 확인<br>주문 취소, 배송지 변경 | 자체 구현 (DB) +<br> **스위트북 API 연동** <br>(`orders/{order_uid}/cancel`, `/orders/{order_uid}/shipping`)
+| 7️⃣ **주문 생성** | 확정된 책으로 최종 주문 | **BOOKPRINT_API SDK 연동**<br>(`orders.create`) |
+| 8️⃣ **주문 추적** | 마이페이지에서 주문 상태 확인<br>주문 취소, 배송지 변경 | 자체 구현 (DB) +<br> **BOOKPRINT_API SDK 연동** <br>(`client.orders.cancel`, `client.orders.update_shipping`)
 
 ---
 
-## 🔌 API 엔드포인트 구현
-
-### 📦 스위트북(BookPrintAPI) 활용 기능
-
-스위트북의 공식 Python SDK([`bookprintapi/`](../bookprintapi/))를 사용하여 포토북 생성 및 주문 기능 구현:
-
-| 엔드포인트 | 스위트북 API 메서드 | 기능 |
-|-----------|-------------------|------|
-| **POST /api/books/create-stream** | `books.create()`<br>`covers.create()`<br>`contents.insert()`<br>`books.finalize()` | **책 생성**: 러닝 기록 입력받아 포토북 초안 생성 → 표지 설계 → 페이지 삽입 → 최종 확정<br>진행 상황을 SSE로 실시간 브라우저 전송 |
-| **POST /api/books/estimate** | `orders.estimate()` | **가격 견적**: 생성된 책의 예상 가격 계산 |
-| **POST /api/orders/confirm-order** | `orders.create()` | **주문 생성**: 확정된 책으로 최종 주문 생성<br>스위트북 `orderUid` 발급받아 DB 저장 |
-
----
+## 상세 API 명세서
 
 ### 💻 자체 구현 기능
 
@@ -153,92 +156,30 @@ VITE v4.x.x  ready in xxx ms
 
 ---
 
-## 🛠️ 기술 스택
 
-### 백엔드
-- **Framework**: FastAPI (Python 3.10+)
-- **Database**: SQLite (로컬 개발용)
-- **ORM**: SQLAlchemy
-- **인증**: JWT (PyJWT, python-jose)
-- **외부 API**: [BookPrintAPI Python SDK](../bookprintapi/) (포토북 제작 및 주문)
 
-### 프론트엔드
-- **Framework**: React 18
-- **빌드 도구**: Vite
-- **상태 관리**: Context API
-- **스타일**: CSS3
+### API 엔드포인트 명세
+
+#### **직접 API 호출 (HTTP 요청)**
+
+| 메서드 | 엔드포인트 | 기능 |
+|--------|-----------|------|---------|
+| **POST** | `/books` | 책 초안 생성 |
+| **POST** | `/books/{bookUid}/photos` | 사진 업로드 |
+| **POST** | `/books/{bookUid}/cover` | 커버 추가 |
+| **POST** | `/books/{bookUid}/contents` | 페이지 컨텐츠 추가 |
+| **POST** | `/books/{bookUid}/finalization` | 책 최종화 |
+
+#### **SDK 호출 (Python bookprintapi 사용)**
+
+| 메서드 | 엔드포인트 | 기능 |
+|--------|-----------|------|
+| **POST** | `/orders` | 주문 생성 |
+| **POST** | `/orders/estimate` | 가격 견적 조회 |
+| **DELETE** | `/orders/{orderUid}/cancel` | 주문 취소 |
+| **PATCH** | `/orders/{orderUid}/shipping` | 배송지 변경 |
 
 ---
-
-## 📚 스위트북 API 활용 방식
-
-### 초기화
-```python
-from bookprintapi import Client
-
-client = Client(
-    api_key=os.getenv("BOOKPRINT_API_KEY"),
-    environment="sandbox"  # Sandbox 테스트 환경
-)
-```
-
-### 구현된 기능별 사용 예시
-
-#### 1. 책 생성 흐름
-```python
-# ① 책 초안 생성
-book = client.books.create(
-    book_spec_uid="SQUAREBOOK_HC",
-    title="2024 나의 러닝 일지",
-    creation_type="TEST"
-)
-book_uid = book["data"]["bookUid"]
-
-# ② 표지 생성
-client.covers.create(
-    book_uid,
-    template_uid="cover_template",
-    parameters={...}
-)
-
-# ③ 내지 페이지 삽입 (반복)
-for record in running_records:
-    client.contents.insert(
-        book_uid,
-        template_uid="content_template",
-        parameters={
-            "date": record["date"],
-            "distance": record["km"],
-            "pace": record["pace"],
-            "memo": record["memo"]
-        }
-    )
-
-# ④ 책 확정
-client.books.finalize(book_uid)
-```
-
-#### 2. 가격 견적
-```python
-estimate = client.orders.estimate(
-    [{"bookUid": book_uid, "quantity": 1}]
-)
-```
-
-#### 3. 주문 생성
-```python
-order = client.orders.create(
-    items=[{"bookUid": book_uid, "quantity": 1}],
-    shipping={
-        "recipientName": "...",
-        "recipientPhone": "...",
-        "postalCode": "...",
-        "address1": "...",
-        "address2": "..."
-    }
-)
-```
-
 
 ## 📝 샘플 데이터 구조
 
