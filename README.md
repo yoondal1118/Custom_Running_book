@@ -110,6 +110,7 @@ INFO:     Application startup complete
 
 ```bash
 cd frontend
+npm install (초기 세팅 시 필요)
 npm run dev
 ```
 
