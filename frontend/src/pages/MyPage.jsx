@@ -79,6 +79,11 @@ export default function MyPage() {
     if (infoForm.password && infoForm.password !== infoForm.password_confirm) {
       setInfoError('비밀번호가 일치하지 않습니다'); return
     }
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$~!%*?&])[A-Za-z\d@$~!%*?&]{8,20}$/;
+    if (!passwordRegex.test(infoForm.password)) {
+      setInfoError('비밀번호는 영문과 숫자, 특수문자(@$~!%*?&)를 포함하여 8~20자여야 합니다');
+      return;
+    }
     try {
       const body = { email: infoForm.email, phone: infoForm.phone }
       if (infoForm.password) { body.password = infoForm.password; body.password_confirm = infoForm.password_confirm }
@@ -167,7 +172,6 @@ export default function MyPage() {
             <div className="info-field"><label>이메일</label>
               <input value={infoForm.email} onChange={e=>setInfoForm(p=>({...p,email:e.target.value}))}/>
             </div>
-            <div className="info-row">
               <div className="info-field"><label>새 비밀번호</label>
                 <input type="password" placeholder="변경 시에만 입력" value={infoForm.password}
                   onChange={e=>setInfoForm(p=>({...p,password:e.target.value}))}/>
@@ -175,7 +179,6 @@ export default function MyPage() {
               <div className="info-field"><label>비밀번호 확인</label>
                 <input type="password" value={infoForm.password_confirm}
                   onChange={e=>setInfoForm(p=>({...p,password_confirm:e.target.value}))}/>
-              </div>
             </div>
             <div className="info-field"><label>연락처</label>
               <input value={infoForm.phone} onChange={e=>setInfoForm(p=>({...p,phone:e.target.value}))}/>

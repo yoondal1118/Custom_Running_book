@@ -22,7 +22,7 @@ export default function SignupPage() {
   const [error, setError]   = useState('')
   const [loading, setLoading] = useState(false)
   const usernameRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,20}$/;
-  const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,20}$/
+  const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$~!%*?&])[A-Za-z\d@$~!%*?&]{8,20}$/;
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const phoneRegex = /^\d{3}-\d{4}-\d{4}$/;
   const update = (k, v) => setForm(p => ({ ...p, [k]: v }))
@@ -40,9 +40,10 @@ export default function SignupPage() {
       return;
     }
     if (!passwordRegex.test(form.password)) {
-      setError('비밀번호는 8~20자이며 영문과 숫자를 포함해야 합니다');
+      setError('비밀번호는 8~20자이며 영문과 숫자, 특수문자(@$~!%*?&)를 포함해야 합니다');
       return;
     }
+
     if (form.password !== form.password_confirm) {
       setError('비밀번호가 일치하지 않습니다'); return
     }
@@ -81,10 +82,8 @@ export default function SignupPage() {
           <Field label="이름"   name="name"     placeholder="실명 입력" required value={form.name}     onChange={update}/>
         </div>
         <Field label="이메일" name="email" type="email" placeholder="example@email.com" required value={form.email} onChange={update}/>
-        <div className="auth-row">
-          <Field label="비밀번호"    name="password"         type="password" placeholder="영문 및 숫자 포함 8자 이상"  maxLength={20}  required value={form.password}         onChange={update}/>
-          <Field label="비밀번호 확인" name="password_confirm" type="password" placeholder="비밀번호 재입력" required maxLength={20} value={form.password_confirm} onChange={update}/>
-        </div>
+        <Field label="비밀번호"    name="password"         type="password" placeholder="영문/숫자/특수문자(@$~!%*?&) 포함 8자 이상"  maxLength={20}  required value={form.password}         onChange={update}/>
+        <Field label="비밀번호 확인" name="password_confirm" type="password" placeholder="비밀번호 재입력" required maxLength={20} value={form.password_confirm} onChange={update}/>
         <Field label="연락처" name="phone" placeholder="010-0000-0000" required value={form.phone} onChange={update}/>
 
         <div className="auth-section-title">
