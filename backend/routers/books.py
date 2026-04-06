@@ -44,7 +44,6 @@ class CreateOrderRequest(BaseModel):
 @router.post("/estimate")
 async def estimate_price(
     req: CreateBookRequest,
-    current_user: models.User = Depends(get_current_user),
 ):
     has_appendix = any(a.name for a in (req.awards or []))
     price_info = calc_price(has_appendix)
