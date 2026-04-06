@@ -143,6 +143,9 @@ def update_me(
         current_user.email = req.email
 
     if req.password:
+        if verify_password(req.password, current_user.hashed_password):
+            raise HTTPException(status_code=400, detail="현재 비밀번호와 일치합니다. 새로운 비밀번호로 변경해주세요."
+        )
         if req.password != req.password_confirm:
             raise HTTPException(status_code=400, detail="비밀번호가 일치하지 않습니다")
         current_user.hashed_password = hash_password(req.password)
