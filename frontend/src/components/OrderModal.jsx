@@ -476,7 +476,7 @@ export default function OrderModal({ isOpen, onClose }) {
   }
 
   return (
-    <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&handleClose()}>
+    <div className="modal-overlay">
       <div className="modal">
         {step !== 'loading' && <button className="modal-close" onClick={handleClose}>✕</button>}
         {step === 'form' && <StepForm user={user} onNext={d=>{setFormData(d);setStep('confirm')}}/>}
