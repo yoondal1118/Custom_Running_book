@@ -120,7 +120,6 @@ async def create_running_book(order_data: dict, progress=None) -> dict:
 
     await report("책 생성 중...", 2)
 
-    # 1. 책 생성
     book_resp = _post("/books", {
         "title":        book_title,
         "bookSpecUid":  "SQUAREBOOK_HC",
@@ -129,14 +128,17 @@ async def create_running_book(order_data: dict, progress=None) -> dict:
     book_uid = book_resp["data"]["bookUid"]
     await report("책 생성 완료", 5)
 
-    preview_b64 = None
+    # 미리보기용 페이지 이미지 수집
+    preview_pages = []   # {"label": "표지", "b64": "data:image/png;base64,..."}
 
     with tempfile.TemporaryDirectory() as tmpdir:
 
-        # 2. 표지
+        # 표지
         await report("표지 생성 중...", 8)
         cover_path = os.path.join(tmpdir, "cover.png")
         await asyncio.to_thread(render_cover_page, book_title, record_year, total_km, cover_path)
+        preview_pages.append({"label": "표지", "b64": image_to_base64(cover_path)})
+
         cover_file = upload_photo(book_uid, cover_path)
         _post_multipart(
             f"/books/{book_uid}/cover",
@@ -152,30 +154,30 @@ async def create_running_book(order_data: dict, progress=None) -> dict:
         )
         await report("표지 완료", 12)
 
-        # 3. 통계 페이지
+        # 통계 페이지
         await report("통계 페이지 생성 중...", 15)
         stats_path = os.path.join(tmpdir, "stats.png")
         await asyncio.to_thread(render_stats_page, book_title, record_year, total_km, fun_stats, stats_path)
+        preview_pages.append({"label": "총 기록", "b64": image_to_base64(stats_path)})
+
         stats_file = upload_photo(book_uid, stats_path)
         add_content_page(book_uid, [stats_file], f"{record_year} 요약")
         await report("통계 페이지 완료", 18)
 
-        # 4. 1~12월 보드판
-        # 진행률: 18% ~ 90% (72% / 12달 = 6%씩)
+        # 1~12월 보드판
         for month in range(1, 13):
             pct_start = 18 + (month - 1) * 6
             await report(f"{month}월 보드판 생성 중...", pct_start)
 
-            ym = f"{record_year}-{month:02d}"
+            ym      = f"{record_year}-{month:02d}"
             records = monthly_data.get(ym, [])
             day_map = {int(r["date"].split("-")[2]): r for r in records}
 
             board_path = os.path.join(tmpdir, f"board_{month:02d}.png")
             await asyncio.to_thread(render_board_page, record_year, month, day_map, book_title, board_path)
 
-            # 첫 번째 기록 있는 월 → 미리보기용 base64
-            if preview_b64 is None and len(records) > 0:
-                preview_b64 = image_to_base64(board_path)
+            # 보드판 전체(2페이지 펼침) 미리보기로 수집
+            preview_pages.append({"label": f"{month}월", "b64": image_to_base64(board_path)})
 
             left_path  = os.path.join(tmpdir, f"board_{month:02d}_L.png")
             right_path = os.path.join(tmpdir, f"board_{month:02d}_R.png")
@@ -192,23 +194,26 @@ async def create_running_book(order_data: dict, progress=None) -> dict:
 
             await report(f"{month}월 보드판 완료", pct_start + 5)
 
-        # 5. 부록
+        # 부록
         if has_appendix:
             await report("부록 페이지 생성 중...", 92)
             appendix_path = os.path.join(tmpdir, "appendix.png")
             await asyncio.to_thread(render_appendix_page, awards, book_title, appendix_path)
+            preview_pages.append({"label": "부록", "b64": image_to_base64(appendix_path)})
+
             appendix_file = upload_photo(book_uid, appendix_path)
             add_content_page(book_uid, [appendix_file], "수상 경력")
             await report("부록 완료", 94)
 
-        # 6. 최종화
+        # 최종화
         await report("책 최종화 중...", 96)
         _post(f"/books/{book_uid}/finalization", {})
-        await report("완료!", 100, preview_b64)
+        await report("완료!", 100)
 
     return {
-        "book_uid":     book_uid,
-        "fun_stats":    fun_stats,
-        "medal_counts": medal_counts,
-        "preview_b64":  preview_b64,
+        "book_uid":      book_uid,
+        "fun_stats":     fun_stats,
+        "medal_counts":  medal_counts,
+        "preview_pages": preview_pages,   # 전체 페이지 목록
+        "preview_b64":   preview_pages[0]["b64"] if preview_pages else None,  # 하위 호환
     }

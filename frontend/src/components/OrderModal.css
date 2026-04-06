@@ -282,109 +282,61 @@
   width: 100%; border: 1px solid rgba(255,255,255,0.08); border-radius: 4px;
   display: block;
 }
-.preview-image-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-.preview-image-notice {
-  font-size: 11px;
-  color: rgba(255,200,100,0.7);
-  font-weight: 300;
-}
-.preview-image-container {
-  position: relative;
-  cursor: pointer;
-}
-.preview-image-container:hover .preview-zoom-hint {
-  opacity: 1;
-}
-.preview-zoom-hint {
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
-  background: rgba(0,0,0,0.6);
-  color: #fff;
-  font-size: 12px;
-  padding: 5px 10px;
-  border-radius: 4px;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-.preview-enlarged-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.9);
-  z-index: 2000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-}
-.preview-enlarged-inner {
-  position: relative;
-  max-width: 95vw;
-  max-height: 90vh;
-}
-.preview-enlarged-inner img {
-  width: 100%;
-  height: auto;
-  max-height: 80vh;
-  object-fit: contain;
-  display: block;
-  border-radius: 4px;
-}
-.preview-enlarged-close {
-  position: absolute;
-  top: -40px;
-  right: 0;
-  background: none;
-  border: none;
-  color: #fff;
-  font-size: 24px;
-  cursor: pointer;
-  opacity: 0.7;
-  transition: opacity 0.2s;
-}
-.preview-enlarged-close:hover { opacity: 1; }
-.preview-enlarged-notice {
-  text-align: center;
-  font-size: 12px;
-  color: rgba(255,200,100,0.7);
-  margin-bottom: 10px;
-}
-.estimate-source {
-  font-size: 10px;
-  color: rgba(255,255,255,0.25);
-  letter-spacing: 1.5px;
-  font-family: 'Oswald', sans-serif;
-  text-transform: uppercase;
-  margin-bottom: 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-}
-.estimate-loading {
-  font-size: 13px;
-  color: rgba(255,255,255,0.3);
-  text-align: center;
-  padding: 12px 0;
-  font-weight: 300;
-}
-.estimate-credit {
-  font-size: 12px;
+
+.addr-change-btn {
   margin-top: 10px;
-  padding: 8px 12px;
-  border-radius: 4px;
-  font-weight: 300;
+  background: transparent;
+  border: 1px solid rgba(232,99,42,0.3);
+  color: var(--orange); font-size: 12px; padding: 7px 14px;
+  cursor: pointer; transition: all 0.2s;
+  font-family: 'Noto Sans KR', sans-serif; display: block;
 }
-.estimate-credit.ok {
-  background: rgba(45,106,63,0.15);
-  border: 1px solid rgba(45,106,63,0.3);
-  color: #97C459;
+.addr-change-btn:hover {
+  background: rgba(232,99,42,0.1); border-color: var(--orange);
 }
-.estimate-credit.warn {
-  background: rgba(226,75,74,0.12);
-  border: 1px solid rgba(226,75,74,0.3);
-  color: #F09595;
+.dummy-fill-btn {
+  width: 100%; background: rgba(255,255,255,0.04);
+  border: 1px dashed rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.5); font-family: 'Noto Sans KR', sans-serif;
+  font-size: 13px; padding: 10px; cursor: pointer; margin-bottom: 16px; transition: all 0.2s;
+}
+.dummy-fill-btn:hover { border-color: var(--orange); color: var(--orange); background: rgba(232,99,42,0.05); }
+
+/* 미리보기 오픈 버튼 */
+.preview-open-wrap { margin-bottom: 16px; }
+.preview-open-thumb {
+  width: 100%; height: 180px;
+  background-size: cover; background-position: center;
+  position: relative; cursor: pointer; border-radius: 4px;
+  overflow: hidden;
+  user-select: none; -webkit-user-select: none;
+}
+.preview-open-wm {
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(
+    -45deg, transparent, transparent 12px,
+    rgba(255,255,255,0.04) 12px, rgba(255,255,255,0.04) 13px
+  );
+  pointer-events: none;
+}
+.preview-open-overlay {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 6px;
+  transition: background 0.2s;
+}
+.preview-open-thumb:hover .preview-open-overlay { background: rgba(0,0,0,0.3); }
+.preview-open-icon { font-size: 32px; }
+.preview-open-text {
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 18px; color: #fff;
+}
+.preview-open-count {
+  font-size: 12px; color: rgba(255,255,255,0.6);
+  background: rgba(232,99,42,0.6); padding: 2px 10px; border-radius: 10px;
+}
+.preview-open-notice {
+  font-size: 11px; color: rgba(255,200,100,0.6);
+  margin-top: 8px; font-weight: 300;
 }

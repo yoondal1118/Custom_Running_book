@@ -26,8 +26,8 @@ export default function OrderCompletePage() {
               <strong>{priceInfo.base_price?.toLocaleString()}원</strong>
             </div>
             <div className="complete-row">
-              <span>추가 기록 ({priceInfo.month_count}개월)</span>
-              <strong>+{priceInfo.month_price?.toLocaleString()}원</strong>
+              <span>부록</span>
+              <strong>{priceInfo.has_appendix?`+${priceInfo.appendix_price.toLocaleString()}원`:'미포함'}</strong>
             </div>
             <div className="complete-row total">
               <span>최종 결제 금액</span>

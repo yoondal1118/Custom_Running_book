@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import AddressModal from './AddressModal'
+import BookPreview from './Bookpreview'
 import './OrderModal.css'
 
 const PIECE_COLORS = [
@@ -312,13 +313,13 @@ function StepLoading({ formData, onDone }) {
         buf = lines.pop()
         for (const line of lines) {
           if (!line.startsWith('data: ')) continue
+          const msg = JSON.parse(line.slice(6))
           try {
-            const msg = JSON.parse(line.slice(6))
             if (!isMounted) return
             if (msg.error) { setError(msg.error); return }
             if (msg.step)  { setStep(msg.step); setPct(msg.pct) }
             if (msg.done)  { onDone({ result: msg.result, price_info: msg.price_info, formData }) }
-          } catch {}
+          } catch {setError(msg.error); return }
         }
       }
     }).catch(e => { if (isMounted) setError(e.message) })
@@ -346,13 +347,11 @@ function StepLoading({ formData, onDone }) {
 function StepComplete({ data, onCancel, onOrder }) {
   const { result, price_info, formData } = data
   const { authFetch } = useAuth()
-  const [ordering, setOrdering] = useState(false)
-  const [enlarged, setEnlarged] = useState(false)
-  const [estimate, setEstimate] = useState(null)
+  const [ordering, setOrdering]           = useState(false)
+  const [previewOpen, setPreviewOpen]     = useState(false)
+  const [estimate, setEstimate]           = useState(null)
   const [estimateLoading, setEstimateLoading] = useState(true)
-  const [estimateError, setEstimateError]  = useState(null)
-  const hasAppendix = formData.awards.some(a => a.name)
-  const totalPrice  = BASE_PRICE + (hasAppendix ? APPENDIX_PRICE : 0)
+  const [estimateError, setEstimateError] = useState(null)
 
   useEffect(() => {
     const fetchEstimate = async () => {
@@ -379,12 +378,17 @@ function StepComplete({ data, onCancel, onOrder }) {
     setOrdering(false)
   }
 
+  const pages = result?.preview_pages || []
+  const hasAppendix = formData.awards.some(a => a.name)
+  const totalPrice  = BASE_PRICE + (hasAppendix ? APPENDIX_PRICE : 0)
   return (
     <>
       <h2>책 생성 완료!</h2>
       <p className="modal-sub">아래 내용을 확인 후 최종 주문해주세요.</p>
 
+      {/* Sweetbook 실제 견적 */}
       <div className="confirm-price-box" style={{marginBottom:20}}>
+        <div className="estimate-source">Sweetbook API 실제 견적</div>
         {estimateLoading ? (
           <div className="estimate-loading">금액 조회 중...</div>
         ) : estimateError ? (
@@ -402,26 +406,22 @@ function StepComplete({ data, onCancel, onOrder }) {
         )}
       </div>
 
-      {result?.preview_b64 && (
-        <div className="preview-image-wrap">
-          <div className="preview-image-header">
-            <div className="preview-image-label">보드판 미리보기</div>
-            <div className="preview-image-notice">⚠ 예시 이미지로 실제와 다를 수 있습니다</div>
+      {/* 책 미리보기 버튼 */}
+      {pages.length > 0 && (
+        <div className="preview-open-wrap">
+          <div
+            className="preview-open-thumb"
+            style={{ backgroundImage: `url(${pages[0].b64})` }}
+            onClick={() => setPreviewOpen(true)}
+          >
+            <div className="preview-open-wm" aria-hidden="true"/>
+            <div className="preview-open-overlay">
+              <div className="preview-open-icon">📖</div>
+              <div className="preview-open-text">책 전체 미리보기</div>
+              <div className="preview-open-count">{pages.length}페이지</div>
+            </div>
           </div>
-          <div className="preview-image-container" onClick={()=>setEnlarged(true)}>
-            <img src={result.preview_b64} alt="보드판 미리보기" className="preview-image"/>
-            <div className="preview-zoom-hint">🔍 클릭하여 확대</div>
-          </div>
-        </div>
-      )}
-
-      {enlarged && (
-        <div className="preview-enlarged-overlay" onClick={()=>setEnlarged(false)}>
-          <div className="preview-enlarged-inner" onClick={e=>e.stopPropagation()}>
-            <button className="preview-enlarged-close" onClick={()=>setEnlarged(false)}>✕</button>
-            <div className="preview-enlarged-notice">⚠ 예시 이미지로 실제와 다를 수 있습니다</div>
-            <img src={result.preview_b64} alt="보드판 미리보기 확대"/>
-          </div>
+          <div className="preview-open-notice">⚠ 미리보기 전용 이미지 — 실제 인쇄물과 다를 수 있습니다</div>
         </div>
       )}
 
@@ -436,6 +436,13 @@ function StepComplete({ data, onCancel, onOrder }) {
           {ordering?'주문 처리 중...':'주문하기 →'}
         </button>
       </div>
+
+      {/* 전체 미리보기 모달 */}
+      <BookPreview
+        pages={pages}
+        isOpen={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+      />
     </>
   )
 }
