@@ -57,7 +57,8 @@ cd Custom_Running_book
 ```bash
 py -3.11 -m venv venv
 # Windows
-venv\Scripts\activate
+venv\Scripts\activate  (cmd)
+.\venv\Scripts\activate (PowerShell)
 # Mac/Linux
 source venv/bin/activate
 ```
