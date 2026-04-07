@@ -67,6 +67,7 @@ source venv/bin/activate
 ```bash
 # 루트에서
 pip install -r requirements.txt
+playwright install
 ```
 
 #### 환경 변수 설정
