@@ -59,6 +59,7 @@ export default function MyPage() {
       })
       const data = await res.json()
       if (!data.success) throw new Error(data.detail)
+      alert("주문이 취소되었습니다")
       setCancelModal(null); setCancelReason(''); fetchOrders()
     } catch (e) { alert(e.message || '취소 중 오류') }
   }

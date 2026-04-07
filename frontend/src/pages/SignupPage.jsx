@@ -95,7 +95,6 @@ export default function SignupPage() {
         </div>
         <div className="auth-row">
           <Field label="수령인"  name="recipient_name"  placeholder="홍길동"       value={form.recipient_name}  onChange={update}/>
-          <Field label="연락처"  name="recipient_phone" placeholder="010-0000-0000" value={form.recipient_phone} onChange={update}/>
         </div>
         <Field label="우편번호" name="postal_code" placeholder="00000"    value={form.postal_code} onChange={update}/>
         <Field label="주소"     name="address1"    placeholder="도로명 주소" value={form.address1}    onChange={update}/>

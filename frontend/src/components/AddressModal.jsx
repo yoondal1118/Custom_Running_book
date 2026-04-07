@@ -61,10 +61,15 @@ export default function AddressModal({ isOpen, onClose, onSelect, selectedId }) 
   }
   
   const handleAddSubmit = async () => {
-    if (!addForm.recipient_name || !addForm.address1 || !addForm.postal_code) {
-      setAddMsg('수령인, 우편번호, 주소는 필수입니다')
+    if (!addForm.recipient_name || !addForm.recipient_phone || !addForm.address1 || !addForm.postal_code) {
+      setAddMsg('수령인, 휴대폰번호, 우편번호, 주소는 필수입니다')
       return
     }
+    const phoneRegex = /^\d{3}-\d{4}-\d{4}$/;
+    if (!phoneRegex.test(addForm.recipient_phone)) {
+        alert('전화번호는 "-"를 포함해주세요');
+        return;
+      }
     try {
       const res = await authFetch('/api/addresses', {
         method: 'POST',
@@ -90,9 +95,9 @@ export default function AddressModal({ isOpen, onClose, onSelect, selectedId }) 
   }
 
   if (!isOpen) return null
-
+  
   return (
-    <div className="addr-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+    <div className="addr-overlay">
       <div className="addr-modal">
         <div className="addr-header">
           <h3>배송지 선택</h3>
