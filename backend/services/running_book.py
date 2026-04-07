@@ -7,7 +7,7 @@ import base64
 from dotenv import load_dotenv
 from services.board_renderer import (
     render_board_page, render_stats_page, render_cover_page,
-    render_appendix_page, get_grade
+    render_appendix_page, render_appendix_pages, get_grade
 )
 
 load_dotenv()
@@ -195,15 +195,17 @@ async def create_running_book(order_data: dict, progress=None) -> dict:
 
             await report(f"{month}월 보드판 완료", pct_start + 5)
 
-        # 부록
+        # 부록 (5개씩 여러 페이지)
         if has_appendix:
             await report("부록 페이지 생성 중...", 92)
-            appendix_path = os.path.join(tmpdir, "appendix.png")
-            await asyncio.to_thread(render_appendix_page, awards, book_title, appendix_path)
-            preview_pages.append({"label": "부록", "b64": image_to_base64(appendix_path)})
-
-            appendix_file = upload_photo(book_uid, appendix_path)
-            add_content_page(book_uid, [appendix_file], "수상 경력")
+            appendix_paths = await asyncio.to_thread(
+                render_appendix_pages, awards, book_title, tmpdir, "appendix"
+            )
+            for idx, appendix_path in enumerate(appendix_paths):
+                label = f"부록 {idx + 1}" if len(appendix_paths) > 1 else "부록"
+                preview_pages.append({"label": label, "b64": image_to_base64(appendix_path)})
+                appendix_file = upload_photo(book_uid, appendix_path)
+                add_content_page(book_uid, [appendix_file], "수상 경력")
             await report("부록 완료", 94)
 
         # 최종화

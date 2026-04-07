@@ -417,19 +417,22 @@ h1 em{{color:#E8632A;font-style:normal;}}
     html_to_png(html, output_path, width=1200, height=1600)
 
 
-def build_appendix_html(awards: list, book_title: str) -> str:
+AWARDS_PER_PAGE = 5
+
+def build_appendix_html(awards_slice: list, book_title: str, page_num: int, total_pages: int) -> str:
     awards_html = ""
-    medals = ["🥇", "🥈", "🥉", "🏅", "🏅", "🏅"]
-    for i, a in enumerate(awards[:6]):
-        medal = medals[i] if i < len(medals) else "🏅"
+    for i, a in enumerate(awards_slice):
+        global_num = (page_num - 1) * AWARDS_PER_PAGE + i + 1
         awards_html += f"""
         <div class="award-item">
-          <div class="award-medal">{medal}</div>
+          <div class="award-num">{global_num}</div>
           <div class="award-info">
             <div class="award-name">{a.get('name', '')}</div>
             <div class="award-result">{a.get('result', '')}</div>
           </div>
         </div>"""
+
+    page_indicator = f"({page_num}/{total_pages})" if total_pages > 1 else ""
 
     return f"""<!DOCTYPE html>
 <html><head><meta charset="UTF-8">
@@ -441,18 +444,21 @@ body{{width:978px;height:845px;background:#1B2A4A;font-family:'Noto Sans KR',san
 .eyebrow{{font-size:11px;color:rgba(255,255,255,0.25);letter-spacing:4px;margin-bottom:14px;}}
 .title{{font-size:40px;font-weight:700;color:#fff;margin-bottom:6px;}}
 .title em{{color:#E8632A;font-style:normal;}}
-.sub{{font-size:13px;color:rgba(255,255,255,0.3);margin-bottom:40px;font-weight:300;}}
-.divider{{width:40px;height:3px;background:#E8632A;margin-bottom:32px;}}
+.page-indicator{{font-size:13px;color:rgba(255,255,255,0.25);display:inline-block;margin-left:12px;font-weight:300;vertical-align:middle;}}
+.sub{{font-size:13px;color:rgba(255,255,255,0.3);margin-bottom:32px;font-weight:300;margin-top:6px;}}
+.divider{{width:40px;height:3px;background:#E8632A;margin-bottom:28px;}}
 .award-item{{display:flex;align-items:center;gap:20px;
   background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);
-  border-radius:10px;padding:20px 24px;margin-bottom:14px;}}
-.award-medal{{font-size:36px;}}
+  border-radius:10px;padding:18px 24px;margin-bottom:12px;}}
+.award-num{{width:36px;height:36px;border-radius:50%;background:rgba(232,99,42,0.18);
+  border:1.5px solid rgba(232,99,42,0.45);color:#E8632A;font-size:15px;
+  font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}}
 .award-name{{font-size:16px;font-weight:500;color:#fff;margin-bottom:4px;}}
 .award-result{{font-size:13px;color:rgba(255,255,255,0.5);font-weight:300;}}
 </style></head>
 <body>
 <div class="eyebrow">APPENDIX</div>
-<div class="title">수상 <em>경력</em></div>
+<div class="title">수상 <em>경력</em><span class="page-indicator">{page_indicator}</span></div>
 <div class="sub">{book_title}</div>
 <div class="divider"></div>
 {awards_html}
@@ -460,5 +466,21 @@ body{{width:978px;height:845px;background:#1B2A4A;font-family:'Noto Sans KR',san
 
 
 def render_appendix_page(awards: list, book_title: str, output_path: str):
-    html = build_appendix_html(awards, book_title)
+    """단일 페이지용 — 하위 호환. awards 최대 5개만 렌더링."""
+    html = build_appendix_html(awards[:AWARDS_PER_PAGE], book_title, 1, 1)
     html_to_png(html, output_path, width=978, height=845)
+
+
+def render_appendix_pages(awards: list, book_title: str, output_dir: str, base_name: str = "appendix") -> list:
+    """awards를 5개씩 나눠 여러 페이지 PNG를 생성하고 경로 목록을 반환."""
+    import math
+    total_pages = max(1, math.ceil(len(awards) / AWARDS_PER_PAGE))
+    paths = []
+    for page_num in range(1, total_pages + 1):
+        start = (page_num - 1) * AWARDS_PER_PAGE
+        slice_ = awards[start:start + AWARDS_PER_PAGE]
+        out_path = os.path.join(output_dir, f"{base_name}_{page_num:02d}.png")
+        html = build_appendix_html(slice_, book_title, page_num, total_pages)
+        html_to_png(html, out_path, width=978, height=845)
+        paths.append(out_path)
+    return paths
