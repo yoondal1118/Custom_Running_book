@@ -27,14 +27,14 @@ function PieceSVG({ fill, light }) {
 }
 
 // ── 단계 1: 주문서 작성 ──────────────────────────────────
-function StepForm({ onNext, user }) {
-  const [recordYear, setRecordYear] = useState(2024)
-  const [selectedPiece, setSelectedPiece] = useState('blue')
-  const [runRows, setRunRows] = useState([{ date: '', km: '', pace: '', memo: '' }])
-  const [awards, setAwards] = useState([{ name: '', result: '' }])
-  const [bookTitle, setBookTitle] = useState('')
+function StepForm({ onNext, user, savedData, onDataChange }) {
+  const [recordYear, setRecordYear] = useState(savedData?.recordYear ?? 2024)
+  const [selectedPiece, setSelectedPiece] = useState(savedData?.selectedPiece ?? 'blue')
+  const [runRows, setRunRows] = useState(savedData?.runRows ?? [{ date: '', km: '', pace: '', memo: '' }])
+  const [awards, setAwards] = useState(savedData?.awards ?? [{ name: '', result: '' }])
+  const [bookTitle, setBookTitle] = useState(savedData?.bookTitle ?? '')
   const [errors, setErrors] = useState([])
-  const [selectedAddress, setSelectedAddress] = useState(user?.default_address || null)
+  const [selectedAddress, setSelectedAddress] = useState(savedData?.selectedAddress ?? user?.default_address ?? null)
   const [addrModalOpen, setAddrModalOpen] = useState(false)
 
   const fillDummyData = () => {
@@ -74,15 +74,27 @@ function StepForm({ onNext, user }) {
 
   const validate = () => {
     const errs = []
-    if (!bookTitle.trim()) errs.push('책 제목을 입력해주세요')
-    if (!selectedPiece) errs.push('보드판 말을 선택해주세요')
+    if (!bookTitle.trim()) {
+      alert('책 제목을 입력해주세요') 
+      return
+    }
+    if (!selectedPiece)
+      alert('보드판 말을 선택해주세요')
     const valid = runRows.filter(r => r.date && r.km)
-    if (valid.length === 0) errs.push('러닝 기록을 1개 이상 입력해주세요')
-    runRows.forEach((r, i) => {
-      if ((r.date || r.km) && (!r.date || !r.km || !r.pace))
-        errs.push(`${i+1}번 기록의 날짜·거리·페이스를 모두 입력해주세요`)
-    })
-    if (!selectedAddress) errs.push('배송지를 선택해주세요')
+    if (valid.length === 0) {
+      alert('러닝 기록을 1개 이상 입력해주세요')
+      return
+    }
+    for (const [i, r] of runRows.entries()) {
+      if ((r.date || r.km) && (!r.date || !r.km || !r.pace)) {
+        alert(`${i + 1}번 기록의 날짜·거리·페이스를 모두 입력해주세요`);
+        return; // 여기서 멈추면 함수 전체가 종료됩니다.
+      }
+    }
+    if (!selectedAddress) {
+      alert('배송지를 선택해주세요')
+      return
+    }
     return errs
   }
 
@@ -90,6 +102,8 @@ function StepForm({ onNext, user }) {
     const errs = validate()
     if (errs.length > 0) { setErrors(errs); return }
     setErrors([])
+    // 다시 확인 버튼으로 돌아올 때를 위해 현재 입력값 저장
+    onDataChange?.({ bookTitle, recordYear, selectedPiece, runRows, awards, selectedAddress })
     onNext({
       bookTitle, recordYear, selectedPiece,
       runRecords: runRows.filter(r => r.date && r.km),
@@ -100,7 +114,15 @@ function StepForm({ onNext, user }) {
   const addRow    = () => setRunRows(p => [...p, { date:'', km:'', pace:'', memo:'' }])
   const removeRow = (i) => runRows.length > 1 && setRunRows(p => p.filter((_,idx) => idx !== i))
   const updateRow = (i,k,v) => setRunRows(p => p.map((r,idx) => idx===i ? {...r,[k]:v} : r))
-  const addAward    = () => setAwards(p => [...p, { name:'', result:'' }])
+  const addAward = () => {
+    setAwards(p => {
+      if (p.length >= 10) {
+        alert("수상 경력은 최대 10개까지만 추가할 수 있습니다.");
+        return p; 
+      }
+      return [...p, { name: '', result: '' }]; 
+    });
+  };
   const removeAward = (i) => awards.length > 1 && setAwards(p => p.filter((_,idx) => idx !== i))
   const updateAward = (i,k,v) => setAwards(p => p.map((a,idx) => idx===i ? {...a,[k]:v} : a))
 
@@ -444,11 +466,13 @@ export default function OrderModal({ isOpen, onClose }) {
   const [step, setStep] = useState('form')
   const [formData, setFormData] = useState(null)
   const [completeData, setCompleteData] = useState(null)
+  // 다시 확인 버튼으로 돌아올 때 입력값 보존용
+  const [formRawData, setFormRawData] = useState(null)
 
   if (!isOpen) return null
 
   const handleClose = () => {
-    setStep('form'); setFormData(null); setCompleteData(null); onClose()
+    setStep('form'); setFormData(null); setCompleteData(null); setFormRawData(null); onClose()
   }
 
   const handleOrder = async () => {
@@ -479,7 +503,7 @@ export default function OrderModal({ isOpen, onClose }) {
     <div className="modal-overlay">
       <div className="modal">
         {step !== 'loading' && <button className="modal-close" onClick={handleClose}>✕</button>}
-        {step === 'form' && <StepForm user={user} onNext={d=>{setFormData(d);setStep('confirm')}}/>}
+        {step === 'form' && <StepForm user={user} savedData={formRawData} onDataChange={setFormRawData} onNext={d=>{setFormData(d);setStep('confirm')}}/>}
         {step === 'confirm' && <StepConfirm formData={formData} onBack={()=>setStep('form')} onBuild={()=>setStep('loading')}/>}
         {step === 'loading' && <StepLoading formData={formData} onDone={d=>{setCompleteData(d);setStep('complete')}}/>}
         {step === 'complete' && <StepComplete data={completeData} onCancel={handleClose} onOrder={handleOrder}/>}
